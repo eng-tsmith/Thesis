@@ -47,10 +47,8 @@ WORKDIR /src
 RUN mkdir /src/code/
 RUN mkdir /src/config/
 
-ADD /config/requirements.txt /src/config/requirements.txt
-
-RUN pip install -r /src/config/requirements.txt
-
+# Port used for websocket
 EXPOSE 4567
+# Port used for anything else
 EXPOSE 8888
 
