@@ -1,51 +1,31 @@
-#parsing command line arguments
-import argparse
-#decoding camera images
-import base64
-#for frametimestamp saving
-from datetime import datetime
-#reading and writing files
-import os
-#high level file operations
-import shutil
-#matrix math
+import base64 #decoding camera images
+import os #reading and writing files
+import shutil #high level file operations
 import numpy as np
-#real-time server
-import socketio
-#concurrent networking 
-import eventlet
-#web server gateway interface
-import eventlet.wsgi
-#image manipulation
+import socketio #real-time server
+import eventlet #concurrent networking
+import eventlet.wsgi #web server gateway interface
 from PIL import Image
-#web framework
 from flask import Flask
-#input output
-from io import BytesIO
-
-#load our saved model
+from io import BytesIO #input output
 from keras.models import load_model
-
-#helper class
 import utils
 import logging
+import sys
 
-#initialize our server
+# initialize server & Flask app
 sio = socketio.Server()
-#our flask (web) app
 app = Flask(__name__)
-#init our model and image array as empty
+
 model = None
 prev_image_array = None
 
-#set min/max speed for our autonomous car
 MAX_SPEED = 25
 MIN_SPEED = 10
-
-#and a speed limit
 speed_limit = MAX_SPEED
 
-#registering event handler for the server
+
+# registering event handler for the server
 @sio.on('telemetry')
 def telemetry(sid, data):
     if data:
@@ -85,7 +65,6 @@ def telemetry(sid, data):
         #    image_filename = os.path.join(args.image_folder, timestamp)
         #    image.save('{}.jpg'.format(image_filename))
     else:
-        
         sio.emit('manual', data={}, skip_sid=True)
 
 
@@ -105,30 +84,16 @@ def send_control(steering_angle, throttle):
         skip_sid=True)
 
 
-def main():
-    global app
+def run(path_to_model):
     global sio
+    global app
     global model
-#    parser = argparse.ArgumentParser(description='Remote Driving')
-#    parser.add_argument('model',         type=str,            help='Path to model h5 file. Model should be on the same path.'    )
-#    parser.add_argument('image_folder',  type=str, nargs='?', help='Path to image folder. This is where the images from the run will be saved.', default='')
-#    args = parser.parse_args()
-#
-#    #load model
-#    model = load_model(args.model)
-    model = load_model('models/model-005.h5')
 
-#    if args.image_folder != '':
-#        logging.info("Creating image folder at {}".format(args.image_folder))
-#        if not os.path.exists(args.image_folder):
-#            os.makedirs(args.image_folder)
-#        else:
-#            shutil.rmtree(args.image_folder)
-#            os.makedirs(args.image_folder)
-#        logging.info("RECORDING THIS RUN ...")
-#    else:
-#        logging.info("NOT RECORDING THIS RUN ...")
-
+    if path_to_model == 'main':
+        logging.info("Can't run file as main. Exiting")
+        sys.exit()
+    logging.info("Loading model at: " + path_to_model)
+    model = load_model(path_to_model)
     logging.info("Creating image folder at {}".format('data/'))
     if not os.path.exists('data/'):
         os.makedirs('data/')
@@ -137,12 +102,11 @@ def main():
         os.makedirs('data/')
         logging.info("RECORDING THIS RUN ...")
 
-    # wrap Flask application with engineio's middleware
+    # wrap Flask application with engineIO's middleware
     app = socketio.Middleware(sio, app)
 
     # deploy as an eventlet WSGI server
     eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
 
-
 if __name__ == '__main__':
-    main()
+    run('main')

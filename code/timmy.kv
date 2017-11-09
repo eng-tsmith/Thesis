@@ -49,13 +49,17 @@
     name: 'screen_settings_realtime'
     BoxLayout:
         orientation: "vertical"
-        Button:
-            text: "Muss noch gemacht werden"
+        FileChooserListView:
+            id: file_chooser
+            path: app.local_path
         BoxLayout:
             orientation: "horizontal"
-            Button:
+            MyButton:
+                id: my_button
                 text: "Go"
-                on_press: app.realtime_ext()
+                on_press: my_button.enabled = False
+                on_press: my_button.text = "Already Running..."
+                on_press: app.realtime_ext(file_chooser.path, file_chooser.selection)
             Button:
                 text: "Back"
                 on_press:
