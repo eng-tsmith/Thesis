@@ -11,7 +11,8 @@ from kivy.uix.popup import Popup
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import BooleanProperty
-
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.filechooser import FileChooserListView
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -67,6 +68,18 @@ class RealtimeThread(threading.Thread):
         self.stopper.set()
 
 
+class TrainThread(threading.Thread):
+    """ Threaded realtime contro """
+    stopper = None
+
+    def __init__(self, params):
+        threading.Thread.__init__(self)
+        self.params = params
+
+    def run(self):
+        train.main(self.params)
+
+
 class RealtimeProcess(multiprocessing.Process):
     def __init__(self):
         multiprocessing.Process.__init__(self)
@@ -78,15 +91,20 @@ class RealtimeProcess(multiprocessing.Process):
 
 
 #############################################################
-class TimmyApp(App):
+class GuiThesisApp(App):
     local_path = os.path.abspath(os.path.join(os.path.curdir, 'models')) # dont change because of kivy bug!!!
 
     def build(self):
         return ScreenManagement()
 
-    def train_ext(self, *args):
-        content = Button(text='Not implemented yet!')
-        popup = Popup(title='Test popup',
+    def train_ext(self, params):
+        logging.info("Start training")
+        logging.info(params)
+
+        worker = TrainThread(params)
+        worker.start()
+        content = Button(text='TODO')
+        popup = Popup(title='Starting Training...',
                       content=content,
                       size_hint=(None, None), size=(400, 400),
                       auto_dismiss=False)
@@ -95,14 +113,12 @@ class TimmyApp(App):
 
     def realtime_ext(self, curr_path, selection):
         logging.info("Start real-time control")
-        logging.info(selection)
-
         stopper = threading.Event()
+
         if not selection:
             path = os.path.normpath(os.path.join(curr_path, 'model-005.h5'))
         else:
             path = os.path.normpath(" ".join(str(x) for x in selection))
-        logging.info(path)
 
         worker = RealtimeThread(stopper, path)
         worker.start()
@@ -118,5 +134,5 @@ class TimmyApp(App):
 
 
 if __name__ == "__main__":
-    timmy_app = TimmyApp()
-    timmy_app.run()
+    thesis_app = GuiThesisApp()
+    thesis_app.run()
