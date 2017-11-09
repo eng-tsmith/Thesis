@@ -77,7 +77,7 @@ class TrainThread(threading.Thread):
         self.params = params
 
     def run(self):
-        train.main(self.params)
+        train.run(self.params)
 
 
 class RealtimeProcess(multiprocessing.Process):

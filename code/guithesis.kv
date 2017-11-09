@@ -66,6 +66,7 @@
                     text: 'Data directory:'
                     halign: 'right'
                 TextInput:
+                    id: text_path
                     text: 'rec_data'
                 Label:
                     size_hint: 1, .1
@@ -77,6 +78,7 @@
                     text: 'Test size fraction:'
                     halign: 'right'
                 TextInput:
+                    id: text_test_frac
                     text: '0.2'
                 Label:
                     size_hint: 1, .1
@@ -88,6 +90,7 @@
                     text: 'Drop out probability:'
                     halign: 'right'
                 TextInput:
+                    id: text_dropout_pos
                     text: '0.5'
                 Label:
                     size_hint: 1, .1
@@ -99,6 +102,7 @@
                     text: 'Number of epochs:'
                     halign: 'right'
                 TextInput:
+                    id: text_nr_epochs
                     text: '10'
                 Label:
                     size_hint: 1, .1
@@ -110,6 +114,7 @@
                     text: 'Samples per epoch:'
                     halign: 'right'
                 TextInput:
+                    id: text_samples_per_epoch
                     text: '20000'
                 Label:
                     size_hint: 1, .1
@@ -121,6 +126,7 @@
                     text: 'Batch size:'
                     halign: 'right'
                 TextInput:
+                    id: text_batch_size
                     text: '40'
                 Label:
                     size_hint: 1, .1
@@ -132,6 +138,7 @@
                     text: 'Save best models only:'
                     halign: 'right'
                 TextInput:
+                    id: text_best_models_only
                     text: 'true'
                 Label:
                     size_hint: 1, .1
@@ -143,6 +150,7 @@
                     text: 'Learning rate:'
                     halign: 'right'
                 TextInput:
+                    id: text_lr
                     text: '1.0e-4'
                 Label:
                     size_hint: 1, .1
@@ -156,7 +164,7 @@
                 text: "Go"
                 size_hint: 0.3, .8
                 on_press: my_button_train.text = "Already Running..."
-                on_press: app.train_ext('test')
+                on_press: app.train_ext([text_path.text, text_test_frac.text, text_dropout_pos.text, text_nr_epochs.text, text_samples_per_epoch.text, text_batch_size.text, text_best_models_only.text, text_lr.text])
             Button:
                 text: "Back"
                 size_hint: 0.3, .8
