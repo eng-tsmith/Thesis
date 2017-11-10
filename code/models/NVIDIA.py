@@ -24,22 +24,22 @@ def build_model(args, input_shape):
     """
 
     inputs = Input(shape=input_shape, name='main_input')
-    norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape)(inputs)
+    norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape, name='norm_layer')(inputs)
 
-    conv1 = Conv2D(24, (5, 5), strides=(2, 2), activation='elu')(norm)
-    conv2 = Conv2D(36, (5, 5), strides=(2, 2), activation='elu')(conv1)
-    conv3 = Conv2D(48, (5, 5), strides=(2, 2), activation='elu')(conv2)
-    conv4 = Conv2D(64, (3, 3), activation='elu')(conv3)
-    conv5 = Conv2D(64, (3, 3), activation='elu')(conv4)
+    conv1 = Conv2D(24, (5, 5), strides=(2, 2), activation='elu', name='conv_layer_1')(norm)
+    conv2 = Conv2D(36, (5, 5), strides=(2, 2), activation='elu', name='conv_layer_2')(conv1)
+    conv3 = Conv2D(48, (5, 5), strides=(2, 2), activation='elu', name='conv_layer_3')(conv2)
+    conv4 = Conv2D(64, (3, 3), activation='elu', name='conv_layer_4')(conv3)
+    conv5 = Conv2D(64, (3, 3), activation='elu', name='conv_layer_5')(conv4)
 
-    dropout = Dropout(args.keep_prob)(conv5)
+    dropout = Dropout(args.keep_prob, name='dropout_layer')(conv5)
 
-    flat = Flatten()(dropout)
+    flat = Flatten(name='flatten_layer')(dropout)
 
-    dense1 = Dense(100, activation='elu')(flat)
-    dense2 = Dense(50, activation='elu')(dense1)
-    dense3 = Dense(10, activation='elu')(dense2)
-    output = Dense(1)(dense3)
+    dense1 = Dense(100, activation='elu', name='fc_layer_1')(flat)
+    dense2 = Dense(50, activation='elu', name='fc_layer_2')(dense1)
+    dense3 = Dense(10, activation='elu', name='fc_layer_3')(dense2)
+    output = Dense(1, name='output_layer')(dense3)
 
     model = Model(inputs=inputs, outputs=output)
     model.summary()
