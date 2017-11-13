@@ -72,7 +72,7 @@ def random_flip(image, steering_angle):
 
 def random_translate(image, steering_angle, range_x, range_y):
     """
-    Randomly shift the image virtially and horizontally (translation).
+    Randomly shift the image vertically and horizontally (translation).
     """
     trans_x = range_x * (np.random.rand() - 0.5)
     trans_y = range_y * (np.random.rand() - 0.5)
