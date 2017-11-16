@@ -70,7 +70,7 @@ def telemetry(sid, data):
 
 @sio.on('connect')
 def connect(sid, environ):
-    print("connect ", sid)
+    logging.info("connect " + sid)
     send_control(0, 0)
 
 

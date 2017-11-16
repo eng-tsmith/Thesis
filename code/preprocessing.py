@@ -3,6 +3,7 @@ import cv2, os
 import numpy as np
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+from sklearn.utils import shuffle
 import logging
 
 
@@ -14,7 +15,7 @@ def center_val_data(X_in):
     """
     Only center images
     """
-    X_out = X_in[:,0]
+    X_out = X_in[:, 0]
 
     return X_out
 
@@ -212,7 +213,7 @@ def augument(data_dir, image_path, steering_angle, range_x=100, range_y=10):
     (The steering angle is associated with the center image)
     """
     #image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
-    image, steering_angle = load_image(data_dir, image_path), steering_angle
+    image = load_image(data_dir, image_path)
     image, steering_angle = random_flip(image, steering_angle)
     image, steering_angle = random_translate(image, steering_angle, range_x, range_y)
     image = random_shadow(image)
@@ -231,7 +232,7 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
         for index in np.random.permutation(image_paths.shape[0]):
             image_path = image_paths[index]
             steering_angle = steering_angles[index]
-            # argumentation
+            # augmentation
             if is_training and np.random.rand() < 0.6:
                 image, steering_angle = augument(data_dir, image_path, steering_angle)
             else:
@@ -243,3 +244,37 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
             if i == batch_size:
                 break
         yield images, steers
+
+
+def batch_generator2(data_dir, x_train, y_train, batch_size, is_training):
+    curr_image = 0
+    n_images = y_train.size
+
+    while True:
+        if curr_image > n_images:
+            curr_image = 0
+        if curr_image == 0:
+            x_train, y_train = shuffle(x_train, y_train)
+
+        future_index = curr_image + batch_size
+
+        x_data = x_train[curr_image:future_index]
+        y_data = y_train[curr_image:future_index]
+
+        x_batch = np.empty([batch_size, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS])
+        y_batch = np.empty(batch_size)
+
+        for sample_index in range(x_data.size):
+            if is_training and np.random.rand() < 0.6:
+                image, label = augument(data_dir, x_data[sample_index], y_data[sample_index])
+            else:
+                image = load_image(data_dir, x_data[sample_index])
+                label = y_data[sample_index]
+            x_batch[sample_index] = preprocess(image)
+            y_batch[sample_index] = label
+
+        curr_image += batch_size
+
+        x_batch = np.asarray(x_batch, dtype='float32')
+        y_batch = np.asarray(y_batch, dtype='float32')
+        yield (x_batch, y_batch)
