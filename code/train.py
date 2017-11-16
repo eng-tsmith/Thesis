@@ -6,11 +6,13 @@ from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, TensorBoard
 
 import logging
+logging.basicConfig(level=logging.INFO)
 import argparse
 import os
+import time
 
 from models.NVIDIA import build_model
-from preprocessing import INPUT_SHAPE, batch_generator
+from preprocessing import INPUT_SHAPE, batch_generator, flatten_data, l_c_r_data
 
 # for debugging, allows for reproducible (deterministic) results
 np.random.seed(0)
@@ -25,17 +27,20 @@ def load_data(args):
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
 
+    X, y = l_c_r_data(X, y)
+    X, y = flatten_data(X, y)
+
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=args.test_size, random_state=0)
 
     return X_train, X_valid, y_train, y_valid
 
 
-def train_model(model, args, X_train, X_valid, y_train, y_valid):
+def train_model(model, experiment, args, X_train, X_valid, y_train, y_valid):
     """
     Train the model
     """
     # Callbacks
-    checkpoint = ModelCheckpoint('./models/model-{epoch:03d}.h5',
+    checkpoint = ModelCheckpoint('./models/' + experiment + 'model-{epoch:03d}.h5',
                                  monitor='val_loss',
                                  verbose=0,
                                  save_best_only=args.save_best_only,
@@ -88,6 +93,8 @@ def run(params):
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=float(params[7]))
     args = parser.parse_args()
 
+    experiment = str(time.time())
+
     # print params
     logging.info('-' * 30)
     logging.info('Parameters')
@@ -100,10 +107,14 @@ def run(params):
     data = load_data(args)
 
     # build model
+    start = time.time()
     model = build_model(args, INPUT_SHAPE)
 
     # train model on data, it saves as model.h5
-    train_model(model, args, *data)
+    train_model(model, experiment, args, *data)
+
+    elapsed = (time.time() - start)
+    logging.info("The Training of the Network took", elapsed, " seconds to finish")
 
 
 def main():
@@ -121,20 +132,28 @@ def main():
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=1.0e-4)
     args = parser.parse_args()
 
+    experiment = str(time.time())
+
     # print parameters
-    print('-' * 30)
-    print('Parameters')
-    print('-' * 30)
+    logging.info('-' * 30)
+    logging.info('Parameters')
+    logging.info('-' * 30)
     for key, value in vars(args).items():
-        print('{:<20} := {}'.format(key, value))
-    print('-' * 30)
+        logging.info('{:<20} := {}'.format(key, value))
+    logging.info('-' * 30)
 
     # load data
     data = load_data(args)
+
     # build model
-    model = build_model(args)
+    start = time.time()
+    model = build_model(args, INPUT_SHAPE)
+
     # train model on data, it saves as model.h5
-    train_model(model, args, *data)
+    train_model(model, experiment, args, *data)
+
+    elapsed = (time.time() - start)
+    logging.info("The Training of the Network took", elapsed, " seconds to finish")
 
 
 if __name__ == '__main__':

@@ -3,10 +3,67 @@ import cv2, os
 import numpy as np
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+import logging
 
 
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
+
+
+def l_c_r_data(X_in, y_in, angle_adj=0.2):
+    """
+    Give left and right images angle adjustment
+    """
+    X_out = np.reshape(X_in, X_in.shape[0]*X_in.shape[1])
+    y_out = np.append(y_in, [y_in + angle_adj, y_in - angle_adj])
+
+    return X_out, y_out
+
+
+def flatten_data(X_in, y_in, num_bins = 25, print_enabled=False):
+    """
+    print a histogram to see which steering angle ranges are most overrepresented
+    print histogram again to show more even distribution of steering angles
+
+    Source : https://github.com/jeremy-shannon/CarND-Behavioral-Cloning-Project/blob/master/model.py
+    """
+    avg_samples_per_bin = y_in.size / num_bins
+    hist, bins = np.histogram(y_in, num_bins)
+    if print_enabled:
+        width = 0.7 * (bins[1] - bins[0])
+        cent = (bins[:-1] + bins[1:]) / 2
+        plt.bar(cent, hist, align='center', width=width)
+        plt.plot((np.min(y_in), np.max(y_in)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
+        plt.show()
+
+    # determine keep probability for each bin: if below avg_samples_per_bin, keep all; otherwise keep prob is proportional
+    # to number of samples above the average, so as to bring the number of samples for that bin down to the average
+    keep_probs = []
+    target = avg_samples_per_bin * .5
+    for i in range(num_bins):
+        if hist[i] < target:
+            keep_probs.append(1.)
+        else:
+            keep_probs.append(1. / (hist[i] / target))
+    remove_list = []
+    for i in range(len(y_in)):
+        for j in range(num_bins):
+            if y_in[i] > bins[j] and y_in[i] <= bins[j + 1]:
+                # delete from X and y with probability 1 - keep_probs[j]
+                if np.random.rand() > keep_probs[j]:
+                    remove_list.append(i)
+    y_out = np.delete(y_in, remove_list)
+    X_out = np.delete(X_in, remove_list, 0)
+
+    # print histogram again to show more even distribution of steering angles
+    if print_enabled:
+        hist, bins = np.histogram(y_out, num_bins)
+        plt.bar(cent, hist, align='center', width=width)
+        plt.plot((np.min(y_out), np.max(y_out)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
+        plt.show()
+
+    logging.info('Data set distribution flattened. Data set size reduced from {} to {}'.format(y_in.size, y_out.size))
+    return X_out, y_out
 
 
 def load_image(data_dir, image_file):
@@ -83,7 +140,7 @@ def random_translate(image, steering_angle, range_x, range_y):
     return image, steering_angle
 
 
-def random_shadow(image):
+def random_shadow_old(image):
     """
     Generates and adds random shadow
     """
@@ -114,6 +171,21 @@ def random_shadow(image):
     return cv2.cvtColor(hls, cv2.COLOR_HLS2RGB)
 
 
+def random_shadow(image):
+    """
+    Generates and adds random shadow
+    """
+    image.setflags(write=1)
+    h, w = image.shape[0], image.shape[1]
+    [x1, x2] = np.random.choice(w, 2, replace=False)
+    k = h / (x2 - x1)
+    b = - k * x1
+    for i in range(h):
+        c = int((i - b) / k)
+        image[i, :c, :] = (image[i, :c, :] * .5).astype(np.int32)
+    return image
+
+
 def random_brightness(image):
     """
     Randomly adjust brightness of the image.
@@ -125,12 +197,13 @@ def random_brightness(image):
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
 
 
-def augument(data_dir, center, left, right, steering_angle, range_x=100, range_y=10):
+def augument(data_dir, image_path, steering_angle, range_x=100, range_y=10):
     """
     Generate an augumented image and adjust steering angle.
     (The steering angle is associated with the center image)
     """
-    image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
+    #image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
+    image, steering_angle = load_image(data_dir, image_path), steering_angle
     image, steering_angle = random_flip(image, steering_angle)
     image, steering_angle = random_translate(image, steering_angle, range_x, range_y)
     image = random_shadow(image)
@@ -147,13 +220,13 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
     while True:
         i = 0
         for index in np.random.permutation(image_paths.shape[0]):
-            center, left, right = image_paths[index]
+            image_path = image_paths[index]
             steering_angle = steering_angles[index]
             # argumentation
             if is_training and np.random.rand() < 0.6:
-                image, steering_angle = augument(data_dir, center, left, right, steering_angle)
+                image, steering_angle = augument(data_dir, image_path, steering_angle)
             else:
-                image = load_image(data_dir, center)
+                image = load_image(data_dir, image_path)
             # add the image and steering angle to the batch
             images[i] = preprocess(image)
             steers[i] = steering_angle
