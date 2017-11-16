@@ -12,7 +12,7 @@ import os
 import time
 
 from models.NVIDIA import build_model
-from preprocessing import INPUT_SHAPE, batch_generator, flatten_data, l_c_r_data
+from preprocessing import INPUT_SHAPE, batch_generator, flatten_data, l_c_r_data, center_val_data
 
 # for debugging, allows for reproducible (deterministic) results
 np.random.seed(0)
@@ -27,10 +27,14 @@ def load_data(args):
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
 
-    X, y = l_c_r_data(X, y)
-    X, y = flatten_data(X, y)
-
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=args.test_size, random_state=0)
+
+    # Train data can be either of the center, left or right and the data is flattened to not prefer steering angles around 0
+    X_train, y_train = l_c_r_data(X_train, y_train)
+    X_train, y_train = flatten_data(X_train, y_train)
+
+    # As the real data will always be the center image, validation will also only consist of middle image and does not have to be flattened
+    X_valid = center_val_data(X_valid)
 
     return X_train, X_valid, y_train, y_valid
 
@@ -114,7 +118,7 @@ def run(params):
     train_model(model, experiment, args, *data)
 
     elapsed = (time.time() - start)
-    logging.info("The Training of the Network took", elapsed, " seconds to finish")
+    logging.info("The Training of the Network took" + elapsed + " seconds to finish")
 
 
 def main():

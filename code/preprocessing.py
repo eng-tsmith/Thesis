@@ -10,6 +10,15 @@ IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
 
+def center_val_data(X_in):
+    """
+    Only center images
+    """
+    X_out = X_in[:,0]
+
+    return X_out
+
+
 def l_c_r_data(X_in, y_in, angle_adj=0.2):
     """
     Give left and right images angle adjustment
@@ -176,7 +185,7 @@ def random_shadow(image):
     Generates and adds random shadow
     """
     image.setflags(write=1)
-    h, w = image.shape[0], image.shape[1]
+    h, w = image.shape[:2]
     [x1, x2] = np.random.choice(w, 2, replace=False)
     k = h / (x2 - x1)
     b = - k * x1
@@ -193,7 +202,7 @@ def random_brightness(image):
     # HSV (Hue, Saturation, Value) is also called HSB ('B' for Brightness).
     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
     ratio = 1.0 + 0.4 * (np.random.rand() - 0.5)
-    hsv[:,:,2] =  hsv[:,:,2] * ratio
+    hsv[:, :, 2] = hsv[:, :, 2] * ratio
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
 
 
