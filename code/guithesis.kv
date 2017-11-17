@@ -154,6 +154,18 @@
                     text: '1.0e-4'
                 Label:
                     size_hint: 1, .1
+            BoxLayout:
+                orientation: "horizontal"
+                Label:
+                    size_hint: 1, .1
+                Label:
+                    text: 'Experiment:'
+                    halign: 'right'
+                TextInput:
+                    id: text_exp
+                    text: 'Experiment Name'
+                Label:
+                    size_hint: 1, .1
         BoxLayout:
             size_hint: 1, .25
             orientation: "horizontal"
@@ -164,7 +176,7 @@
                 text: "Go"
                 size_hint: 0.3, .8
                 on_press: my_button_train.text = "Already Running..."
-                on_press: app.train_ext([text_path.text, text_test_frac.text, text_dropout_pos.text, text_nr_epochs.text, text_samples_per_epoch.text, text_batch_size.text, text_best_models_only.text, text_lr.text])
+                on_press: app.train_ext([text_path.text, text_test_frac.text, text_dropout_pos.text, text_nr_epochs.text, text_samples_per_epoch.text, text_batch_size.text, text_best_models_only.text, text_lr.text, text_exp.text])
             Button:
                 text: "Back"
                 size_hint: 0.3, .8

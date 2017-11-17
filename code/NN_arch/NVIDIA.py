@@ -32,7 +32,7 @@ def build_model(args, input_shape):
     conv4 = Conv2D(64, (3, 3), activation='elu', name='conv_layer_4')(conv3)
     conv5 = Conv2D(64, (3, 3), activation='elu', name='conv_layer_5')(conv4)
 
-    dropout = Dropout(args.keep_prob, name='dropout_layer')(conv5)
+    dropout = Dropout(args.drop_prob, name='dropout_layer')(conv5)
 
     flat = Flatten(name='flatten_layer')(dropout)
 

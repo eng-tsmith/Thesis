@@ -6,12 +6,13 @@ from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, TensorBoard
 
 import logging
-logging.basicConfig(level=logging.INFO)
+
 import argparse
 import os
 import time
+import csv
 
-from models.NVIDIA import build_model
+from NN_arch.NVIDIA import build_model
 from preprocessing import INPUT_SHAPE, batch_generator2, flatten_data, l_c_r_data, center_val_data
 
 # for debugging, allows for reproducible (deterministic) results
@@ -32,7 +33,7 @@ def load_data(args):
                     if dirs[0] != 'IMG':
                         logging.info("Missing IMG directory in " + subdir)
                         break
-                except (IndexError):
+                except(IndexError):
                     logging.info("No directories!")
                     break
                 data_df = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)),
@@ -56,25 +57,34 @@ def load_data(args):
     return X_train, X_valid, y_train, y_valid
 
 
-def train_model(model, experiment, args, X_train, X_valid, y_train, y_valid):
+def train_model(model, args, X_train, X_valid, y_train, y_valid):
     """
     Train the model
     """
     # Create directories for experiment
-    dir_model = './models/' + experiment + '/'
-    dir_tb = './logs/' + experiment + '/'
-    if not os.path.exists(dir_model):
-        os.makedirs(dir_model)
-    if not os.path.exists(dir_tb):
-        os.makedirs(dir_tb)
+    dir_log = './logs/' + args.exp_name + '/'
+    if not os.path.exists(dir_log):
+        os.makedirs(dir_log)
+
+    # Save Hyperparameters
+    with open(dir_log+'hyperparameters.csv', 'a') as csvfile:
+        csv_writer = csv.writer(csvfile, delimiter=':')
+        csv_writer.writerow(['Experiment name', args.exp_name])
+        csv_writer.writerow(['Learning rate', args.learning_rate])
+        csv_writer.writerow(['Batch size', args.batch_size])
+        csv_writer.writerow(['Samples per epoch', args.samples_per_epoch])
+        csv_writer.writerow(['Number of epochs', args.nb_epoch])
+        csv_writer.writerow(['Dropout probability', args.drop_prob])
+        csv_writer.writerow(['Test size fraction', args.test_size])
+        csv_writer.writerow(['Save best models only', args.save_best_only])
 
     # Callbacks
-    checkpoint = ModelCheckpoint(dir_model + '/model-{epoch:03d}.h5',
+    checkpoint = ModelCheckpoint(dir_log + '/model-{epoch:03d}.h5',
                                  monitor='val_loss',
                                  verbose=0,
                                  save_best_only=args.save_best_only,
                                  mode='auto')
-    tensorboard = TensorBoard(log_dir=dir_tb + './logs',
+    tensorboard = TensorBoard(log_dir=dir_log,
                               histogram_freq=0,
                               batch_size=32,
                               write_graph=True,
@@ -114,15 +124,19 @@ def run(params):
     parser = argparse.ArgumentParser(description='Behavioral Cloning Training Program')
     parser.add_argument('-d', help='data directory', dest='data_dir', type=str, default=params[0])
     parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=float(params[1]))
-    parser.add_argument('-k', help='drop out probability', dest='keep_prob', type=float, default=float(params[2]))
+    parser.add_argument('-k', help='drop out probability', dest='drop_prob', type=float, default=float(params[2]))
     parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=int(params[3]))
     parser.add_argument('-s', help='samples per epoch', dest='samples_per_epoch', type=int, default=int(params[4]))
     parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=int(params[5]))
     parser.add_argument('-o', help='save best models only', dest='save_best_only', type=s2b, default=params[6])
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=float(params[7]))
+    parser.add_argument('-e', help='experiment name', dest='exp_name', type=str, default=params[8])
     args = parser.parse_args()
 
-    experiment = str(time.time())
+    if args.exp_name == 'Experiment Name':
+        args.exp_name = str(time.time())
+
+    logging.info('Experiment name: ' + args.exp_name)
 
     # print params
     logging.info('-' * 30)
@@ -140,7 +154,7 @@ def run(params):
     model = build_model(args, INPUT_SHAPE)
 
     # train model on data, it saves as model.h5
-    train_model(model, experiment, args, *data)
+    train_model(model, args, *data)
 
     elapsed = (time.time() - start)
     logging.info("The Training of the Network took" + str(elapsed) + " seconds to finish")
@@ -149,19 +163,23 @@ def run(params):
 def main():
     """
        Load train/validation data set and train the model
-       """
+    """
+    # Logging
+    logging.basicConfig(level=logging.INFO)
+    # Parser
     parser = argparse.ArgumentParser(description='Behavioral Cloning Training Program')
     parser.add_argument('-d', help='data directory', dest='data_dir', type=str, default='rec_data')
     parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.2)
-    parser.add_argument('-k', help='drop out probability', dest='keep_prob', type=float, default=0.5)
+    parser.add_argument('-k', help='drop out probability', dest='drop_prob', type=float, default=0.5)
     parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=10)
     parser.add_argument('-s', help='samples per epoch', dest='samples_per_epoch', type=int, default=20000)
     parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=40)
     parser.add_argument('-o', help='save best models only', dest='save_best_only', type=s2b, default='true')
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=1.0e-4)
+    parser.add_argument('-e', help='experiment name', dest='exp_name', type=str, default=str(time.time()))
     args = parser.parse_args()
 
-    experiment = str(time.time())
+    logging.info('Experiment name: ' + args.exp_name)
 
     # print parameters
     logging.info('-' * 30)
@@ -179,7 +197,7 @@ def main():
     model = build_model(args, INPUT_SHAPE)
 
     # train model on data, it saves as model.h5
-    train_model(model, experiment, args, *data)
+    train_model(model, args, *data)
 
     elapsed = (time.time() - start)
     logging.info("The Training of the Network took" + str(elapsed) + " seconds to finish")
