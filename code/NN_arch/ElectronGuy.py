@@ -7,6 +7,7 @@ def build_model(args, input_shape):
     """
     https://github.com/electroncastle/behavioral_cloning/blob/master/model.py
     """
+    name = 'ElectronGuy'
 
     inputs = Input(shape=input_shape, name='main_input')
     norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape, name='norm_layer')(inputs)
@@ -51,5 +52,5 @@ def build_model(args, input_shape):
     model = Model(inputs=inputs, outputs=output)
     model.summary()
 
-    return model
+    return model, name
 

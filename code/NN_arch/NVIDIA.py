@@ -22,6 +22,8 @@ def build_model(args, input_shape):
     dropout avoids overfitting
     ELU(Exponential linear unit) function takes care of the Vanishing gradient problem.
     """
+    name = 'NVIDIA'
+
 
     inputs = Input(shape=input_shape, name='main_input')
     norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape, name='norm_layer')(inputs)
@@ -44,4 +46,4 @@ def build_model(args, input_shape):
     model = Model(inputs=inputs, outputs=output)
     model.summary()
 
-    return model
+    return model, name

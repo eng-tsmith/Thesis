@@ -39,11 +39,13 @@ def telemetry(sid, data):
         image = Image.open(BytesIO(base64.b64decode(data["image"])))
         try:
             image = np.asarray(image)       # from PIL image to numpy array
-            image = preprocessing.preprocess(image) # apply the preprocessing
+            image = preprocessing.preprocess(image)  # apply the preprocessing
             image = np.array([image])       # the model expects 4D array
 
+            logging.info(image.shape)
+
             # predict the steering angle for the image
-            steering_angle = float(model.predict(image, batch_size=1))
+            steering_angle = float(model.predict(image, batch_size=1)[0])
             # lower the throttle as the speed increases
             # if the speed is above the current speed limit, we are on a downhill.
             # make sure we slow down first and then go back to the original max speed.
@@ -94,12 +96,12 @@ def run(path_to_model):
         sys.exit()
     logging.info("Loading model at: " + path_to_model)
     model = load_model(path_to_model)
-    logging.info("Creating image folder at {}".format('data/'))
-    if not os.path.exists('data/'):
-        os.makedirs('data/')
+    logging.info("Creating image folder at {}".format('./data/'))
+    if not os.path.exists('./data/'):
+        os.makedirs('./data/')
     else:
-        shutil.rmtree('data/')
-        os.makedirs('data/')
+        shutil.rmtree('./data/')
+        os.makedirs('./data/')
         logging.info("RECORDING THIS RUN ...")
 
     # wrap Flask application with engineIO's middleware
@@ -109,4 +111,7 @@ def run(path_to_model):
     eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
 
 if __name__ == '__main__':
-    run('main')
+    # Logging
+    logging.basicConfig(level=logging.INFO)
+    logging.info('Loading example...')
+    run('C:\ProgramData\Thesis\code\logs\model.h5')

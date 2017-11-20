@@ -64,9 +64,11 @@ def load_data(data_dir, test_size):
 
 # 1. Load Data
 X_train, X_valid, y_train, y_valid = load_data(data_dir, test_size)
-
 p = batch_generator2(data_dir, X_train, y_train, batch_size, True)
 
 for i in p:
     image = i[0][0]
+    train = i[1]
+
+    print(train)
     plot_image(image)

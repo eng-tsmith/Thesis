@@ -9,11 +9,15 @@ import logging
 
 import argparse
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+os.environ['TF_CPP_MIN_VLOG_LEVEL']='2'
 import time
 import csv
 
-from NN_arch.NVIDIA import build_model
+from NN_arch.ElectronGuy import build_model
 from preprocessing import INPUT_SHAPE, batch_generator2, flatten_data, l_c_r_data, center_val_data
+import keras.backend.tensorflow_backend as K
+from keras.utils.vis_utils import plot_model
 
 # for debugging, allows for reproducible (deterministic) results
 np.random.seed(0)
@@ -59,10 +63,19 @@ def load_data(args):
     return X_train, X_valid, y_train, y_valid
 
 
-def train_model(model, args, X_train, X_valid, y_train, y_valid):
+def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
     """
     Train the model
     """
+    # Select device
+    device = '/gpu:1'  # 0=Intel 1=Nvidia
+    with K.tf.device(device):
+        K.set_session(
+            K.tf.Session(config=K.tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)))
+
+    # Time measurements
+    start = time.time()
+
     # Create directories for experiment
     dir_log = './logs/' + args.exp_name + '/'
     if not os.path.exists(dir_log):
@@ -72,6 +85,7 @@ def train_model(model, args, X_train, X_valid, y_train, y_valid):
     with open(dir_log+'hyperparameters.csv', 'a') as csvfile:
         csv_writer = csv.writer(csvfile, delimiter=':')
         csv_writer.writerow(['Experiment name', args.exp_name])
+        csv_writer.writerow(['NN architecture', NN_name])
         csv_writer.writerow(['Learning rate', args.learning_rate])
         csv_writer.writerow(['Batch size', args.batch_size])
         csv_writer.writerow(['Number of epochs', args.nb_epoch])
@@ -96,9 +110,11 @@ def train_model(model, args, X_train, X_valid, y_train, y_valid):
     logging.info('Learning rate: ' + str(args.learning_rate))
     adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
-
     # Compile model
-    model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mae']) # mae = mean absoult error
+    model.compile(loss='mean_squared_error', optimizer=adam, metrics=['acc', 'mae']) # mae = mean absoult error
+
+    # Plot model
+    plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
 
     # Start Training
     model.fit_generator(batch_generator2(args.data_dir, X_train, y_train, args.batch_size, True),
@@ -111,6 +127,15 @@ def train_model(model, args, X_train, X_valid, y_train, y_valid):
                         max_queue_size=1)
 
     logging.info("Finished Training")
+
+    # Log duration of training
+    elapsed = (time.time() - start)
+    logging.info("The Training of the Network took " + str(int(elapsed)) + " seconds to finish")
+
+    with open(dir_log + 'hyperparameters.csv', 'a') as csvfile:
+        csv_writer = csv.writer(csvfile, delimiter=':')
+        csv_writer.writerow(['Training duration', str(elapsed)])
+
     return
 
 
@@ -155,14 +180,12 @@ def run(params):
     data = load_data(args)
 
     # build model
-    start = time.time()
-    model = build_model(args, INPUT_SHAPE)
+    model, NN_name = build_model(args, INPUT_SHAPE)
 
     # train model on data, it saves as model.h5
-    train_model(model, args, *data)
+    train_model(model, NN_name, args, *data)
 
-    elapsed = (time.time() - start)
-    logging.info("The Training of the Network took" + str(elapsed) + " seconds to finish")
+    return
 
 
 def main():
@@ -197,14 +220,11 @@ def main():
     data = load_data(args)
 
     # build model
-    start = time.time()
-    model = build_model(args, INPUT_SHAPE)
+    model, NN_name = build_model(args, INPUT_SHAPE)
 
     # train model on data, it saves as model.h5
-    train_model(model, args, *data)
-
-    elapsed = (time.time() - start)
-    logging.info("The Training of the Network took" + str(elapsed) + " seconds to finish")
+    train_model(model, NN_name, args, *data)
+    return
 
 
 if __name__ == '__main__':
