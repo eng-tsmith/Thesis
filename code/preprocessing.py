@@ -11,6 +11,11 @@ IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
 
+def plot_image(image_display):
+    plt.imshow(np.asarray(image_display, dtype='uint8'))
+    plt.show()
+
+
 def center_val_data(X_in):
     """
     Only center images
@@ -110,7 +115,7 @@ def preprocess(image):
     """
     image = crop(image)
     image = resize(image)
-    image = rgb2yuv(image)
+    #image = rgb2yuv(image)# This may become interesting when taking images from camera for speed.,
     return image
 
 
@@ -207,21 +212,21 @@ def random_brightness(image):
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
 
 
-def augument(data_dir, image_path, steering_angle, range_x=100, range_y=10):
+def augment(data_dir, image_path, steering_angle, range_x=100, range_y=10):
     """
-    Generate an augumented image and adjust steering angle.
+    Generate an augmented image and adjust steering angle.
     (The steering angle is associated with the center image)
     """
     #image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
     image = load_image(data_dir, image_path)
     image, steering_angle = random_flip(image, steering_angle)
-    image, steering_angle = random_translate(image, steering_angle, range_x, range_y)
+    #image, steering_angle = random_translate(image, steering_angle, range_x, range_y)
     image = random_shadow(image)
     image = random_brightness(image)
     return image, steering_angle
 
 
-def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_training):
+def batch_generator_old(data_dir, image_paths, steering_angles, batch_size, is_training):
     """
     Generate training image give image paths and associated steering angles
     """
@@ -234,7 +239,7 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
             steering_angle = steering_angles[index]
             # augmentation
             if is_training and np.random.rand() < 0.6:
-                image, steering_angle = augument(data_dir, image_path, steering_angle)
+                image, steering_angle = augment(data_dir, image_path, steering_angle)
             else:
                 image = load_image(data_dir, image_path)
             # add the image and steering angle to the batch
@@ -246,27 +251,27 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
         yield images, steers
 
 
-def batch_generator2(data_dir, x_train, y_train, batch_size, is_training):
+def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
     curr_image = 0
-    n_images = y_train.size
+    n_images = y_in.size
 
     while True:
         if curr_image > n_images:
             curr_image = 0
         if curr_image == 0:
-            x_train, y_train = shuffle(x_train, y_train)
+            x_in, y_in = shuffle(x_in, y_in)
 
         future_index = curr_image + batch_size
 
-        x_data = x_train[curr_image:future_index]
-        y_data = y_train[curr_image:future_index]
+        x_data = x_in[curr_image:future_index]
+        y_data = y_in[curr_image:future_index]
 
         x_batch = np.empty([batch_size, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS])
         y_batch = np.empty(batch_size)
 
         for sample_index in range(x_data.size):
             if is_training and np.random.rand() < 0.6:
-                image, label = augument(data_dir, x_data[sample_index], y_data[sample_index])
+                image, label = augment(data_dir, x_data[sample_index], y_data[sample_index])
             else:
                 image = load_image(data_dir, x_data[sample_index])
                 label = y_data[sample_index]

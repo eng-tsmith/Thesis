@@ -92,14 +92,14 @@ class RealtimeProcess(multiprocessing.Process):
 
 #############################################################
 class GuiThesisApp(App):
-    local_path = os.path.abspath(os.path.join(os.path.curdir, 'models')) # dont change because of kivy bug!!!
+    local_path = os.path.abspath(os.path.join(os.path.curdir, 'logs')) # dont change because of kivy bug!!!
 
     def build(self):
         return ScreenManagement()
 
     def train_ext(self, params):
         logging.info("Start training")
-        logging.info(params)
+        #logging.info(params)
 
         worker = TrainThread(params)
         worker.start()

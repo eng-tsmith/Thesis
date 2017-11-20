@@ -1,5 +1,5 @@
 import preprocessing
-from preprocessing import flatten_data, l_c_r_data, load_image, center_val_data
+from preprocessing import flatten_data, l_c_r_data, load_image, center_val_data, batch_generator2, plot_image
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -22,26 +22,41 @@ def load_data(data_dir, test_size):
     """
     Load training data from CSV and split it into training and validation set
     """
-    data_df = pd.read_csv(os.path.join(os.getcwd(), data_dir, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+    # data_df = pd.read_csv(os.path.join(os.getcwd(), args.data_dir, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+    data = np.empty([1, 7])
+    for subdir, dirs, files in os.walk(data_dir):
+        for file in files:
+            if file == 'driving_log.csv':
+                logging.info("Loading : " + os.path.join(subdir, file))
+                try:
+                    if dirs[0] != 'IMG':
+                        logging.info("Missing IMG directory in " + subdir)
+                        break
+                except(IndexError):
+                    logging.info("No directories!")
+                    break
+                data_df = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)),
+                                      names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+                data = np.append(data, data_df.values, axis=0)
+    data = np.delete(data, (0), axis=0)
 
-    X = data_df[['center', 'left', 'right']].values
-    y = data_df['steering'].values
+    # names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed']
+    X = data[:, 0:3]
+    y = data[:, 3]
 
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=test_size, random_state=0)
 
     # Train data can be either of the center, left or right and the data is flattened to not prefer steering angles around 0
     X_train, y_train = l_c_r_data(X_train, y_train)
-    X_train, y_train = flatten_data(X_train, y_train, print_enabled=True)
+    X_train, y_train = flatten_data(X_train, y_train)
 
     # As the real data will always be the center image, validation will also only consist of middle image and does not have to be flattened
     X_valid = center_val_data(X_valid)
 
+    logging.info('Train on {} samples, validate on {} samples'.format(len(X_train), len(X_valid)))
+
     return X_train, X_valid, y_train, y_valid
 
-
-def plot_image(image_display):
-    plt.imshow(image_display)
-    plt.show()
 
 ###############################
 # Test Pipeline
@@ -50,38 +65,8 @@ def plot_image(image_display):
 # 1. Load Data
 X_train, X_valid, y_train, y_valid = load_data(data_dir, test_size)
 
-# 2. Choose random sample within dataset
-index = randint(0, y_train.size)
-img = X_train[index]
-#center, left, right = X_train[index]
-steering_angle = y_train[index]
+p = batch_generator2(data_dir, X_train, y_train, batch_size, True)
 
-# 3. Dataaugmentation steps
-"""
-Generate an augumented image and adjust steering angle.
-(The steering angle is associated with the center image)
-"""
-image = load_image(data_dir, img)
-plot_image(image)
-
-image, steering_angle = preprocessing.random_flip(image, steering_angle)
-plot_image(image)
-
-image, steering_angle = preprocessing.random_translate(image, steering_angle, 100, 10)
-plot_image(image)
-
-image = preprocessing.random_shadow(image)
-plot_image(image)
-
-image = preprocessing.random_brightness(image)
-plot_image(image)
-
-# 4. Preprocessing
-image = preprocessing.crop(image)
-plot_image(image)
-
-image = preprocessing.resize(image)
-plot_image(image)
-
-image = preprocessing.rgb2yuv(image)
-plot_image(image)
+for i in p:
+    image = i[0][0]
+    plot_image(image)

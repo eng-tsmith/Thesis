@@ -26,11 +26,11 @@ def build_model(args, input_shape):
     inputs = Input(shape=input_shape, name='main_input')
     norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape, name='norm_layer')(inputs)
 
-    conv1 = Conv2D(24, (5, 5), strides=(2, 2), activation='elu', name='conv_layer_1')(norm)
-    conv2 = Conv2D(36, (5, 5), strides=(2, 2), activation='elu', name='conv_layer_2')(conv1)
-    conv3 = Conv2D(48, (5, 5), strides=(2, 2), activation='elu', name='conv_layer_3')(conv2)
-    conv4 = Conv2D(64, (3, 3), activation='elu', name='conv_layer_4')(conv3)
-    conv5 = Conv2D(64, (3, 3), activation='elu', name='conv_layer_5')(conv4)
+    conv1 = Conv2D(24, (5, 5), strides=(2, 2), activation='relu', name='conv_layer_1')(norm)
+    conv2 = Conv2D(36, (5, 5), strides=(2, 2), activation='relu', name='conv_layer_2')(conv1)
+    conv3 = Conv2D(48, (5, 5), strides=(2, 2), activation='relu', name='conv_layer_3')(conv2)
+    conv4 = Conv2D(64, (3, 3), activation='relu', name='conv_layer_4')(conv3)
+    conv5 = Conv2D(64, (3, 3), activation='relu', name='conv_layer_5')(conv4)
 
     dropout = Dropout(args.drop_prob, name='dropout_layer')(conv5)
 
