@@ -23,10 +23,10 @@ batch_size = 1
 # 1. Load Data
 arg = Args(data_dir, test_size)
 X_train, X_valid, y_train, y_valid = load_data(arg)
-p = batch_generator_old(data_dir, X_train, y_train, batch_size, True)
+p = batch_generator2(data_dir, X_train, y_train, batch_size, True)
 
 # 2. Load Model
-path_to_model = 'C:/Users/ga29mos/Dev/Thesis/code/logs/New/model-032.h5'
+path_to_model = 'C:/Users/ga29mos/Dev/Thesis/code/logs/New/model-070.h5'
 logging.info("Loading model at: " + path_to_model)
 model = load_model(path_to_model)
 model.summary()

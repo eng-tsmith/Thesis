@@ -95,9 +95,11 @@ def run(path_to_model):
     if path_to_model == 'main':
         logging.info("Can't run file as main. Exiting")
         sys.exit()
+
     logging.info("Loading model at: " + path_to_model)
     model = load_model(path_to_model)
     model.summary()
+
     logging.info("Creating image folder at {}".format('./data/'))
     if not os.path.exists('./data/'):
         os.makedirs('./data/')
@@ -121,4 +123,4 @@ if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:/Users/ga29mos/Dev/Thesis/code/logs/model_gut.h5')
+    run('C:/Users/ga29mos/Dev/Thesis/code/logs/New/model-070.h5')

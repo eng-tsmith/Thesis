@@ -35,7 +35,7 @@ def l_c_r_data(X_in, y_in, angle_adj=0.2):
     return X_out, y_out
 
 
-def flatten_data(X_in, y_in, num_bins = 25, print_enabled=False):
+def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
     """
     print a histogram to see which steering angle ranges are most overrepresented
     print histogram again to show more even distribution of steering angles
@@ -226,6 +226,19 @@ def augment(data_dir, center, left, right, steering_angle, range_x=100, range_y=
     return image, steering_angle
 
 
+def augment2(data_dir, image_path, steering_angle, range_x=100, range_y=10):
+    """
+    Generate an augmented image and adjust steering angle.
+    (The steering angle is associated with the center image)
+    """
+    image = load_image(data_dir, image_path)
+    image, steering_angle = random_flip(image, steering_angle)
+    #image, steering_angle = random_translate(image, steering_angle, range_x, range_y)
+    image = random_shadow(image)
+    image = random_brightness(image)
+    return image, steering_angle
+
+
 def batch_generator_old(data_dir, image_paths, steering_angles, batch_size, is_training):
     """
     Generate training image give image paths and associated steering angles
@@ -271,12 +284,12 @@ def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
 
         for sample_index in range(x_data.size):
             if is_training and np.random.rand() < 0.6:
-                image, label = augment(data_dir, x_data[sample_index], y_data[sample_index])
+                image, label = augment2(data_dir, x_data[sample_index], y_data[sample_index])
             else:
                 image = load_image(data_dir, x_data[sample_index])
                 label = y_data[sample_index]
             x_batch[sample_index] = preprocess(image)
-            y_batch[sample_index] = label
+            y_batch[sample_index] = np.array([label])
 
         curr_image += batch_size
 

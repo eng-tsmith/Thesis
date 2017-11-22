@@ -18,8 +18,8 @@ batch_size = 32
 
 # 1. Load Data
 arg = Args(data_dir, test_size)
-X_train, X_valid, y_train, y_valid = load_data(arg)
-p = batch_generator_old(data_dir, X_train, y_train, batch_size, True)
+X_train, X_valid, y_train, y_valid = load_data(arg, print_enabled=True)
+p = batch_generator2(data_dir, X_train, y_train, batch_size, True)
 
 for i in p:
     print(i[0].shape)

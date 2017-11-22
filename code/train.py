@@ -12,7 +12,7 @@ import os
 import time
 import csv
 
-from NN_arch.NVIDIA import build_model
+from NN_arch.ElectronGuy import build_model
 from preprocessing import INPUT_SHAPE, batch_generator2, batch_generator_old, flatten_data, l_c_r_data, center_val_data
 import keras.backend.tensorflow_backend as K
 from keras.utils.vis_utils import plot_model
@@ -21,7 +21,7 @@ from keras.utils.vis_utils import plot_model
 np.random.seed(0)
 
 
-def load_data(args):
+def load_data(args, print_enabled=False):
     """
     Load training data from CSV and split it into training and validation set
     """
@@ -45,6 +45,10 @@ def load_data(args):
     y = data['steering'].values
 
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=args.test_size, random_state=0)
+
+    # Flatten data
+    X_train, y_train = l_c_r_data(X_train, y_train)
+    X_train, y_train = flatten_data(X_train, y_train, print_enabled=print_enabled)
 
     logging.info('Train on {} samples, validate on {} samples'.format(len(y_train), len(y_valid)))
 
@@ -82,8 +86,8 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
                                  save_weights_only=False)
 
     tensorboard = TensorBoard(log_dir=dir_log,
-                              histogram_freq=0,
-                              batch_size=32,
+                              histogram_freq=10,
+                              batch_size=args.batch_size,
                               write_graph=True,
                               write_grads=False,
                               write_images=True)
@@ -99,7 +103,7 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
     # TODO: ImportError: Failed to import pydot. You must install pydot and graphviz for `pydotprint` to work.
 
     # Start Training
-    model.fit_generator(batch_generator_old(args.data_dir, X_train, y_train, args.batch_size, True),
+    model.fit_generator(batch_generator2(args.data_dir, X_train, y_train, args.batch_size, True),
                         steps_per_epoch=len(X_train)/args.batch_size,
                         epochs=args.nb_epoch,
                         verbose=1,
