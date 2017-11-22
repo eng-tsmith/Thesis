@@ -12,6 +12,7 @@ from keras.models import load_model
 import preprocessing
 import logging
 import sys
+import cv2
 
 # initialize server & Flask app
 sio = socketio.Server()
@@ -24,6 +25,7 @@ MAX_SPEED = 25
 MIN_SPEED = 10
 speed_limit = MAX_SPEED
 
+EXTRA_GUI = True
 
 # registering event handler for the server
 @sio.on('telemetry')
@@ -36,16 +38,15 @@ def telemetry(sid, data):
         # The current speed of the car
         speed = float(data["speed"])
         # The current image from the center camera of the car
-        image = Image.open(BytesIO(base64.b64decode(data["image"])))
+        image_src = Image.open(BytesIO(base64.b64decode(data["image"])))
         try:
-            image = np.asarray(image)       # from PIL image to numpy array
+            image = np.asarray(image_src)       # from PIL image to numpy array
             image = preprocessing.preprocess(image)  # apply the preprocessing
             image = np.array([image])       # the model expects 4D array
 
-            logging.info(image.shape)
-
             # predict the steering angle for the image
-            steering_angle = float(model.predict(image, batch_size=1)[0])
+            steering_angle = float(model.predict(image, batch_size=1)[0][0])
+
             # lower the throttle as the speed increases
             # if the speed is above the current speed limit, we are on a downhill.
             # make sure we slow down first and then go back to the original max speed.
@@ -58,14 +59,13 @@ def telemetry(sid, data):
 
             logging.info('{} {} {}'.format(steering_angle, throttle, speed))
             send_control(steering_angle, throttle)
-        except Exception as e:
-            logging.info(e)
 
-        ## save frame
-        #if args.image_folder != '':
-        #    timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
-        #    image_filename = os.path.join(args.image_folder, timestamp)
-        #    image.save('{}.jpg'.format(image_filename))
+            # Extra gui
+            if EXTRA_GUI:
+                cv2.imshow('Center camera', cv2.cvtColor(np.asarray(image_src), cv2.COLOR_RGB2BGR))
+                cv2.imshow('CNN input', cv2.cvtColor(image[0], cv2.COLOR_RGB2BGR))
+                cv2.waitKey(1)
+        except Exception as e: logging.info(e)
     else:
         sio.emit('manual', data={}, skip_sid=True)
 
@@ -90,19 +90,26 @@ def run(path_to_model):
     global sio
     global app
     global model
+    global EXTRA_GUI
 
     if path_to_model == 'main':
         logging.info("Can't run file as main. Exiting")
         sys.exit()
     logging.info("Loading model at: " + path_to_model)
     model = load_model(path_to_model)
+    model.summary()
     logging.info("Creating image folder at {}".format('./data/'))
     if not os.path.exists('./data/'):
         os.makedirs('./data/')
     else:
-        shutil.rmtree('./data/')
-        os.makedirs('./data/')
+        #shutil.rmtree('./data/')
+        #os.makedirs('./data/')
         logging.info("RECORDING THIS RUN ...")
+
+    # Initialize OpenCV image windows
+    if EXTRA_GUI:
+        cv2.namedWindow('Center camera', cv2.WINDOW_NORMAL)
+        cv2.namedWindow('CNN input', cv2.WINDOW_NORMAL)
 
     # wrap Flask application with engineIO's middleware
     app = socketio.Middleware(sio, app)
@@ -114,4 +121,4 @@ if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:\ProgramData\Thesis\code\logs\model.h5')
+    run('C:/Users/ga29mos/Dev/Thesis/code/logs/model_gut.h5')

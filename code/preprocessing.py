@@ -1,5 +1,5 @@
-
-import cv2, os
+import cv2
+import os
 import numpy as np
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -212,13 +212,13 @@ def random_brightness(image):
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
 
 
-def augment(data_dir, image_path, steering_angle, range_x=100, range_y=10):
+def augment(data_dir, center, left, right, steering_angle, range_x=100, range_y=10):
     """
     Generate an augmented image and adjust steering angle.
     (The steering angle is associated with the center image)
     """
-    #image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
-    image = load_image(data_dir, image_path)
+    image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
+    #image = load_image(data_dir, image_path)
     image, steering_angle = random_flip(image, steering_angle)
     #image, steering_angle = random_translate(image, steering_angle, range_x, range_y)
     image = random_shadow(image)
@@ -235,16 +235,16 @@ def batch_generator_old(data_dir, image_paths, steering_angles, batch_size, is_t
     while True:
         i = 0
         for index in np.random.permutation(image_paths.shape[0]):
-            image_path = image_paths[index]
+            center, left, right = image_paths[index]
             steering_angle = steering_angles[index]
             # augmentation
             if is_training and np.random.rand() < 0.6:
-                image, steering_angle = augment(data_dir, image_path, steering_angle)
+                image, steering_angle = augment(data_dir, center, left, right, steering_angle)
             else:
-                image = load_image(data_dir, image_path)
+                image = load_image(data_dir, center)
             # add the image and steering angle to the batch
             images[i] = preprocess(image)
-            steers[i] = steering_angle
+            steers[i] = np.array([steering_angle])
             i += 1
             if i == batch_size:
                 break

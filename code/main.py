@@ -103,7 +103,7 @@ class GuiThesisApp(App):
 
         worker = TrainThread(params)
         worker.start()
-        content = Button(text='TODO')
+        content = Button(text='Neural Network is training...')
         popup = Popup(title='Starting Training...',
                       content=content,
                       size_hint=(None, None), size=(400, 400),
@@ -122,7 +122,7 @@ class GuiThesisApp(App):
 
         worker = RealtimeThread(stopper, path)
         worker.start()
-        content = Button(text='Stop')
+        content = Button(text='Cancel')
         popup = Popup(title='Looking for Unity IO Socket...',
                       content=content,
                       size_hint=(None, None), size=(400, 400),

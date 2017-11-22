@@ -9,13 +9,11 @@ import logging
 
 import argparse
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-os.environ['TF_CPP_MIN_VLOG_LEVEL']='2'
 import time
 import csv
 
-from NN_arch.ElectronGuy import build_model
-from preprocessing import INPUT_SHAPE, batch_generator2, flatten_data, l_c_r_data, center_val_data
+from NN_arch.NVIDIA import build_model
+from preprocessing import INPUT_SHAPE, batch_generator2, batch_generator_old, flatten_data, l_c_r_data, center_val_data
 import keras.backend.tensorflow_backend as K
 from keras.utils.vis_utils import plot_model
 
@@ -27,8 +25,7 @@ def load_data(args):
     """
     Load training data from CSV and split it into training and validation set
     """
-    #data_df = pd.read_csv(os.path.join(os.getcwd(), args.data_dir, 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
-    data = np.empty([1, 7])
+    data_list = []
     for subdir, dirs, files in os.walk(args.data_dir):
         for file in files:
             if file == 'driving_log.csv':
@@ -40,25 +37,16 @@ def load_data(args):
                 except(IndexError):
                     logging.info("No directories!")
                     break
-                data_df = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)),
-                                      names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
-                data = np.append(data, data_df.values, axis=0)
-    data = np.delete(data, (0), axis=0)
+                data_df = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+                data_list.append(data_df)
 
-    # names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed']
-    X = data[:, 0:3]
-    y = data[:, 3]
+    data = pd.concat(data_list)
+    X = data[['center', 'left', 'right']].values
+    y = data['steering'].values
 
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=args.test_size, random_state=0)
 
-    # Train data can be either of the center, left or right and the data is flattened to not prefer steering angles around 0
-    X_train, y_train = l_c_r_data(X_train, y_train)
-    X_train, y_train = flatten_data(X_train, y_train)
-
-    # As the real data will always be the center image, validation will also only consist of middle image and does not have to be flattened
-    X_valid = center_val_data(X_valid)
-
-    logging.info('Train on {} samples, validate on {} samples'.format(len(X_train), len(X_valid)))
+    logging.info('Train on {} samples, validate on {} samples'.format(len(y_train), len(y_valid)))
 
     return X_train, X_valid, y_train, y_valid
 
@@ -67,12 +55,6 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
     """
     Train the model
     """
-    # Select device
-    device = '/gpu:1'  # 0=Intel 1=Nvidia
-    with K.tf.device(device):
-        K.set_session(
-            K.tf.Session(config=K.tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)))
-
     # Time measurements
     start = time.time()
 
@@ -95,10 +77,10 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
 
     # Callbacks
     checkpoint = ModelCheckpoint(dir_log + '/model-{epoch:03d}.h5',
-                                 monitor='val_loss',
-                                 verbose=0,
+                                 verbose=1,
                                  save_best_only=args.save_best_only,
-                                 mode='auto')
+                                 save_weights_only=False)
+
     tensorboard = TensorBoard(log_dir=dir_log,
                               histogram_freq=0,
                               batch_size=32,
@@ -107,29 +89,28 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
                               write_images=True)
 
     # Optimizer
-    logging.info('Learning rate: ' + str(args.learning_rate))
     adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
     # Compile model
-    model.compile(loss='mean_squared_error', optimizer=adam, metrics=['acc', 'mae']) # mae = mean absoult error
+    model.compile(loss='mean_squared_error', optimizer=adam, metrics=['acc', 'mae'])
 
     # Plot model
-    plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
+    # plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
+    # TODO: ImportError: Failed to import pydot. You must install pydot and graphviz for `pydotprint` to work.
 
     # Start Training
-    model.fit_generator(batch_generator2(args.data_dir, X_train, y_train, args.batch_size, True),
+    model.fit_generator(batch_generator_old(args.data_dir, X_train, y_train, args.batch_size, True),
                         steps_per_epoch=len(X_train)/args.batch_size,
                         epochs=args.nb_epoch,
                         verbose=1,
                         callbacks=[checkpoint, tensorboard],
-                        validation_data=batch_generator2(args.data_dir, X_valid, y_valid, args.batch_size, False),
+                        validation_data=batch_generator_old(args.data_dir, X_valid, y_valid, args.batch_size, False),
                         validation_steps=len(X_valid)/args.batch_size,
                         max_queue_size=1)
 
-    logging.info("Finished Training")
-
     # Log duration of training
     elapsed = (time.time() - start)
+    logging.info("Finished Training")
     logging.info("The Training of the Network took " + str(int(elapsed)) + " seconds to finish")
 
     with open(dir_log + 'hyperparameters.csv', 'a') as csvfile:

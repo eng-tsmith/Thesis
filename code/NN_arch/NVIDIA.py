@@ -1,5 +1,5 @@
-from keras.layers import Input, Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten
-from keras.models import Model
+from keras.layers import Input, Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten, BatchNormalization
+from keras.models import Sequential
 
 
 def build_model(args, input_shape):
@@ -21,9 +21,8 @@ def build_model(args, input_shape):
     the fully connected layer for predicting the steering angle.
     dropout avoids overfitting
     ELU(Exponential linear unit) function takes care of the Vanishing gradient problem.
-    """
-    name = 'NVIDIA'
 
+    name = 'NVIDIA'
 
     inputs = Input(shape=input_shape, name='main_input')
     norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape, name='norm_layer')(inputs)
@@ -45,5 +44,22 @@ def build_model(args, input_shape):
 
     model = Model(inputs=inputs, outputs=output)
     model.summary()
+    """
+    name = 'NVIDIA'
 
+    model = Sequential()
+    model.add(Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape))
+    model.add(Conv2D(24, (5, 5), strides=(2, 2), activation='relu'))
+    model.add(Conv2D(36, (5, 5), strides=(2, 2), activation='relu'))
+    model.add(Conv2D(48, (5, 5), strides=(2, 2), activation='relu'))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(Dropout(args.drop_prob))
+    model.add(Flatten())
+    model.add(Dense(100, activation='elu'))
+    model.add(Dense(50, activation='elu'))
+    model.add(Dense(10, activation='elu'))
+    model.add(Dense(1))
+
+    model.summary()
     return model, name

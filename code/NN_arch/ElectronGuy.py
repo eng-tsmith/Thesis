@@ -1,4 +1,4 @@
-from keras.layers import Input, Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten, Activation
+from keras.layers import Input, Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten, Activation, BatchNormalization
 from keras.regularizers import l2
 from keras.models import Model
 
@@ -10,7 +10,8 @@ def build_model(args, input_shape):
     name = 'ElectronGuy'
 
     inputs = Input(shape=input_shape, name='main_input')
-    norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape, name='norm_layer')(inputs)
+    #norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape, name='norm_layer')(inputs)
+    norm = BatchNormalization(input_shape=input_shape, axis=1, name='norm_layer')(inputs)
 
     conv1 = Conv2D(16, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(1e-5), name='conv_layer_1')(norm)
     act1 = Activation('relu', name='act_layer_1')(conv1)
