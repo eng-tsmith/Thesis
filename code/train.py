@@ -50,6 +50,9 @@ def load_data(args, print_enabled=False):
     X_train, y_train = l_c_r_data(X_train, y_train)
     X_train, y_train = flatten_data(X_train, y_train, print_enabled=print_enabled)
 
+    # Only Center for Validation
+    X_valid = center_val_data(X_valid)
+
     logging.info('Train on {} samples, validate on {} samples'.format(len(y_train), len(y_valid)))
 
     return X_train, X_valid, y_train, y_valid
@@ -81,12 +84,13 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
 
     # Callbacks
     checkpoint = ModelCheckpoint(dir_log + '/model-{epoch:03d}.h5',
-                                 verbose=1,
+                                 monitor='val_loss',
+                                 verbose=0,
                                  save_best_only=args.save_best_only,
-                                 save_weights_only=False)
+                                 mode='auto')
 
     tensorboard = TensorBoard(log_dir=dir_log,
-                              histogram_freq=10,
+                              histogram_freq=0,
                               batch_size=args.batch_size,
                               write_graph=True,
                               write_grads=False,
@@ -102,13 +106,15 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
     # plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
     # TODO: ImportError: Failed to import pydot. You must install pydot and graphviz for `pydotprint` to work.
 
+
+
     # Start Training
     model.fit_generator(batch_generator2(args.data_dir, X_train, y_train, args.batch_size, True),
                         steps_per_epoch=len(X_train)/args.batch_size,
                         epochs=args.nb_epoch,
                         verbose=1,
                         callbacks=[checkpoint, tensorboard],
-                        validation_data=batch_generator_old(args.data_dir, X_valid, y_valid, args.batch_size, False),
+                        validation_data=batch_generator2(args.data_dir, X_valid, y_valid, args.batch_size, False),
                         validation_steps=len(X_valid)/args.batch_size,
                         max_queue_size=1)
 
