@@ -48,7 +48,7 @@ def build_model(args, input_shape):
     dropout5 = Dropout(0.5, name='dropout_layer_5')(dense2)
     dense3 = Dense(64, activation='elu', kernel_regularizer=l2(1e-5), name='fc_layer_3')(dropout5)
     dense4 = Dense(10, activation='elu', kernel_regularizer=l2(1e-5), name='fc_layer_4')(dense3)
-    output = Dense(1, activation='linear', kernel_regularizer=l2(0.0), name='fc_layer_5')(dense4)
+    output = Dense(2, activation='linear', kernel_regularizer=l2(0.0), name='fc_layer_5')(dense4)
 
     model = Model(inputs=inputs, outputs=output)
     model.summary()

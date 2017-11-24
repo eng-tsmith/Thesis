@@ -39,9 +39,17 @@ def l_c_r_data(x_in, y_in, angle_adj=0.2):
     :param angle_adj:
     :return:
     """
-    x_out = np.reshape(x_in, x_in.shape[0]*x_in.shape[1])
-    y_out = np.append(y_in, [y_in + angle_adj, y_in - angle_adj])
-
+    if y_in.ndim == 1:
+        x_out = np.reshape(x_in, x_in.shape[0]*x_in.shape[1])
+        y_out = np.append(y_in, [y_in + angle_adj, y_in - angle_adj])
+    elif y_in.ndim == 2:
+        x_out = np.reshape(x_in, x_in.shape[0]*x_in.shape[1])
+        y_1 = np.append(y_in[:, 0], [y_in[:, 0] + angle_adj, y_in[:, 0] - angle_adj])
+        y_2 = np.append(y_in[:, 1], [y_in[:, 1], y_in[:, 1]])
+        y_out = np.column_stack((y_1, y_2))
+    else:
+        logging.info("ERROR! Unknown Dimension. Look at y dim")
+        return 0, 0
     return x_out, y_out
 
 
@@ -57,13 +65,21 @@ def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
     :param print_enabled:
     :return:
     """
-    avg_samples_per_bin = y_in.size / num_bins
-    hist, bins = np.histogram(y_in, num_bins)
+    if y_in.ndim == 1:
+        y_curr = y_in
+    elif y_in.ndim == 2:
+        y_curr = y_in[:, 0]
+    else:
+        logging.info("ERROR! Unknown Dimension. Look at y dim")
+        return 0, 0
+
+    avg_samples_per_bin = y_curr.size / num_bins
+    hist, bins = np.histogram(y_curr, num_bins)
     if print_enabled:
         width = 0.7 * (bins[1] - bins[0])
         cent = (bins[:-1] + bins[1:]) / 2
         plt.bar(cent, hist, align='center', width=width)
-        plt.plot((np.min(y_in), np.max(y_in)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
+        plt.plot((np.min(y_curr), np.max(y_curr)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
         plt.show()
 
     # determine keep probability for each bin: if below avg_samples_per_bin, keep all; otherwise keep prob is proportional
@@ -76,23 +92,29 @@ def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
         else:
             keep_probs.append(1. / (hist[i] / target))
     remove_list = []
-    for i in range(len(y_in)):
+    for i in range(len(y_curr)):
         for j in range(num_bins):
-            if y_in[i] > bins[j] and y_in[i] <= bins[j + 1]:
+            if y_curr[i] > bins[j] and y_curr[i] <= bins[j + 1]:
                 # delete from X and y with probability 1 - keep_probs[j]
                 if np.random.rand() > keep_probs[j]:
                     remove_list.append(i)
-    y_out = np.delete(y_in, remove_list)
+
+    y_out = np.delete(y_in, remove_list, 0)
     X_out = np.delete(X_in, remove_list, 0)
 
     # print histogram again to show more even distribution of steering angles
     if print_enabled:
-        hist, bins = np.histogram(y_out, num_bins)
+        if y_in.ndim == 1:
+            y_curr = y_out
+        elif y_in.ndim == 2:
+            y_curr = y_out[:, 0]
+
+        hist, bins = np.histogram(y_curr, num_bins)
         plt.bar(cent, hist, align='center', width=width)
-        plt.plot((np.min(y_out), np.max(y_out)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
+        plt.plot((np.min(y_curr), np.max(y_curr)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
         plt.show()
 
-    logging.info('Data set distribution flattened. Data set size reduced from {} to {}'.format(y_in.size, y_out.size))
+    logging.info('Data set distribution flattened. Data set size reduced from {} to {}'.format(X_in.size, X_out.size))
     return X_out, y_out
 
 
@@ -237,6 +259,15 @@ def random_brightness(image):
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
 
 
+def normalize_speed(speed):
+    """
+    Normalize speed from MPH to [-0.5, 0.5]
+    :param speed:
+    :return:
+    """
+    return speed / 31.0 - 0.5
+
+
 def augment(data_dir, center, left, right, steering_angle, range_x=100, range_y=10):
     """
     Generate an augmented image and adjust steering angle
@@ -300,7 +331,7 @@ def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
     :param is_training:
     """
     curr_image = 0
-    n_images = y_in.size
+    n_images = x_in.size
 
     while True:
         if curr_image > n_images:
@@ -314,18 +345,38 @@ def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
         y_data = y_in[curr_image:future_index]
 
         x_batch = np.empty([batch_size, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS])
-        y_batch = np.empty(batch_size)
+        if y_in.ndim == 1:
+            y_batch = np.empty(batch_size)
+        elif y_in.ndim == 2:
+            y_batch = np.empty([batch_size, 2])
+        else:
+            logging.info("ERROR! Unknown Dimension. Look at y dim")
+            return 0, 0
 
         for sample_index in range(x_data.size):
             # Only do data augmentation for training data with a probability of 60%
-            if is_training and np.random.rand() < 0.6:
-                image, label = augment2(data_dir, x_data[sample_index], y_data[sample_index])
-            else:
-                image = load_image(data_dir, x_data[sample_index])
-                label = y_data[sample_index]
-            # Preprocessing goes for all data
-            x_batch[sample_index] = preprocess(image)
-            y_batch[sample_index] = np.array([label])
+            if y_in.ndim == 1:
+                if is_training and np.random.rand() < 0.6:
+                    image, label_steer = augment2(data_dir, x_data[sample_index], y_data[sample_index])
+                else:
+                    image = load_image(data_dir, x_data[sample_index])
+                    label_steer = y_data[sample_index]
+
+                # Preprocessing goes for all data
+                x_batch[sample_index] = preprocess(image)
+                y_batch[sample_index] = np.array([label_steer])
+
+            elif y_in.ndim == 2:
+                if is_training and np.random.rand() < 0.6:
+                    image, label_steer = augment2(data_dir, x_data[sample_index], y_data[sample_index][0])
+                else:
+                    image = load_image(data_dir, x_data[sample_index])
+                    label_steer = y_data[sample_index][0]
+
+                # Preprocessing goes for all data
+                x_batch[sample_index] = preprocess(image)
+                label_speed = normalize_speed(y_data[sample_index][1])
+                y_batch[sample_index] = np.array([label_steer, label_speed])
 
         # Keeps track of which image has already been seen
         curr_image += batch_size
