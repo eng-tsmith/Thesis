@@ -1,21 +1,34 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 
+from keras import backend as K
+
+if K.backend() == 'tensorflow':
+    import tensorflow as tf
+    from keras.backend.tensorflow_backend import set_session
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.gpu_options.visible_device_list = "0"
+    sess = tf.Session(config=config)
+    K.set_session(sess)
+
+
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, TensorBoard
+from keras.utils.vis_utils import plot_model
 
 import logging
 
 import argparse
-import os
 import time
 import csv
 
 from NN_arch.NVIDIA import build_model
 from preprocessing import INPUT_SHAPE, batch_generator2, batch_generator_old, flatten_data, l_c_r_data, center_val_data
-import keras.backend.tensorflow_backend as K
-from keras.utils.vis_utils import plot_model
+
 
 # for debugging, allows for reproducible (deterministic) results
 np.random.seed(0)
