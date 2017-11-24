@@ -103,7 +103,8 @@ def load_image(data_dir, image_file):
     :param image_file:
     :return:
     """
-    return mpimg.imread(os.path.join(data_dir, image_file.strip()))
+    #return mpimg.imread(os.path.join(data_dir, image_file.strip()))
+    return mpimg.imread(image_file.strip())
 
 
 def crop(image):
