@@ -123,4 +123,4 @@ if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:/Users/ga29mos/Dev/Thesis/code/logs/New/model-070.h5')
+    run('C:/Users/ga29mos/Dev/Thesis/code/logs/ElectroGuy2/model-006.h5')

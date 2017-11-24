@@ -12,27 +12,37 @@ INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
 
 def plot_image(image_display):
+    """
+    Plot the image. Used for testing functions.
+    :param image_display:
+    """
     plt.imshow(np.asarray(image_display, dtype='uint8'))
     plt.show()
 
 
 def center_val_data(X_in):
     """
-    Only center images
+    Only consider center images
+    :param X_in:
+    :return:
     """
     X_out = X_in[:, 0]
 
     return X_out
 
 
-def l_c_r_data(X_in, y_in, angle_adj=0.2):
+def l_c_r_data(x_in, y_in, angle_adj=0.2):
     """
-    Give left and right images angle adjustment
+    Reshape array and adjust angle of left and right images
+    :param x_in:
+    :param y_in:
+    :param angle_adj:
+    :return:
     """
-    X_out = np.reshape(X_in, X_in.shape[0]*X_in.shape[1])
+    x_out = np.reshape(x_in, x_in.shape[0]*x_in.shape[1])
     y_out = np.append(y_in, [y_in + angle_adj, y_in - angle_adj])
 
-    return X_out, y_out
+    return x_out, y_out
 
 
 def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
@@ -41,6 +51,11 @@ def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
     print histogram again to show more even distribution of steering angles
 
     Source : https://github.com/jeremy-shannon/CarND-Behavioral-Cloning-Project/blob/master/model.py
+    :param X_in:
+    :param y_in:
+    :param num_bins:
+    :param print_enabled:
+    :return:
     """
     avg_samples_per_bin = y_in.size / num_bins
     hist, bins = np.histogram(y_in, num_bins)
@@ -84,6 +99,9 @@ def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
 def load_image(data_dir, image_file):
     """
     Load RGB images from a file
+    :param data_dir:
+    :param image_file:
+    :return:
     """
     return mpimg.imread(os.path.join(data_dir, image_file.strip()))
 
@@ -91,6 +109,8 @@ def load_image(data_dir, image_file):
 def crop(image):
     """
     Crop the image (removing the sky at the top and the car front at the bottom)
+    :param image:
+    :return:
     """
     return image[60:-25, :, :] # remove the sky and the car front
 
@@ -98,13 +118,17 @@ def crop(image):
 def resize(image):
     """
     Resize the image to the input shape used by the network model
+    :param image:
+    :return:
     """
     return cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT), cv2.INTER_AREA)
 
 
 def rgb2yuv(image):
     """
-    Convert the image from RGB to YUV (This is what the NVIDIA model does)
+    Convert the image from RGB to YUV (This is what the NVIDIA Paper does).
+    :param image:
+    :return:
     """
     return cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
 
@@ -115,14 +139,14 @@ def preprocess(image):
     """
     image = crop(image)
     image = resize(image)
-    #image = rgb2yuv(image)# This may become interesting when taking images from camera for speed.,
+    # This may become interesting when taking images from real camera
+    #image = rgb2yuv(image
     return image
 
 
 def choose_image(data_dir, center, left, right, steering_angle):
     """
-    Randomly choose an image from the center, left or right, and adjust
-    the steering angle.
+    Take a random image (center, left right) and adjust steering angle
     """
     choice = np.random.choice(3)
     if choice == 0:
@@ -134,7 +158,7 @@ def choose_image(data_dir, center, left, right, steering_angle):
 
 def random_flip(image, steering_angle):
     """
-    Randomly flipt the image left <-> right, and adjust the steering angle.
+    Randomly mirrors the image left <-> right, and accordingly the steering angle
     """
     if np.random.rand() < 0.5:
         image = cv2.flip(image, 1)
@@ -144,7 +168,7 @@ def random_flip(image, steering_angle):
 
 def random_translate(image, steering_angle, range_x, range_y):
     """
-    Randomly shift the image vertically and horizontally (translation).
+    Randomly shifts the image vertically and horizontally (translation)
     """
     trans_x = range_x * (np.random.rand() - 0.5)
     trans_y = range_y * (np.random.rand() - 0.5)
@@ -157,7 +181,7 @@ def random_translate(image, steering_angle, range_x, range_y):
 
 def random_shadow_old(image):
     """
-    Generates and adds random shadow
+    Generates and adds random shadow. Not used anymore
     """
     height, width = image.shape[:2]
     # (x1, y1) and (x2, y2) forms a line
@@ -203,7 +227,7 @@ def random_shadow(image):
 
 def random_brightness(image):
     """
-    Randomly adjust brightness of the image.
+    Randomly adjusts brightness of the image
     """
     # HSV (Hue, Saturation, Value) is also called HSB ('B' for Brightness).
     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -214,8 +238,7 @@ def random_brightness(image):
 
 def augment(data_dir, center, left, right, steering_angle, range_x=100, range_y=10):
     """
-    Generate an augmented image and adjust steering angle.
-    (The steering angle is associated with the center image)
+    Generate an augmented image and adjust steering angle
     """
     image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
     #image = load_image(data_dir, image_path)
@@ -223,6 +246,7 @@ def augment(data_dir, center, left, right, steering_angle, range_x=100, range_y=
     #image, steering_angle = random_translate(image, steering_angle, range_x, range_y)
     image = random_shadow(image)
     image = random_brightness(image)
+
     return image, steering_angle
 
 
@@ -236,12 +260,13 @@ def augment2(data_dir, image_path, steering_angle, range_x=100, range_y=10):
     #image, steering_angle = random_translate(image, steering_angle, range_x, range_y)
     image = random_shadow(image)
     image = random_brightness(image)
+
     return image, steering_angle
 
 
 def batch_generator_old(data_dir, image_paths, steering_angles, batch_size, is_training):
     """
-    Generate training image give image paths and associated steering angles
+    Generator for training/ valdiation data. OLD, not used anymore
     """
     images = np.empty([batch_size, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS])
     steers = np.empty(batch_size)
@@ -265,6 +290,14 @@ def batch_generator_old(data_dir, image_paths, steering_angles, batch_size, is_t
 
 
 def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
+    """
+    Generator for training/ valdiation data
+    :param data_dir:
+    :param x_in:
+    :param y_in:
+    :param batch_size:
+    :param is_training:
+    """
     curr_image = 0
     n_images = y_in.size
 
@@ -283,16 +316,21 @@ def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
         y_batch = np.empty(batch_size)
 
         for sample_index in range(x_data.size):
+            # Only do data augmentation for training data with a probability of 60%
             if is_training and np.random.rand() < 0.6:
                 image, label = augment2(data_dir, x_data[sample_index], y_data[sample_index])
             else:
                 image = load_image(data_dir, x_data[sample_index])
                 label = y_data[sample_index]
+            # Preprocessing goes for all data
             x_batch[sample_index] = preprocess(image)
             y_batch[sample_index] = np.array([label])
 
+        # Keeps track of which image has already been seen
         curr_image += batch_size
 
+        # Yield as numpy array for tensorflow backend
         x_batch = np.asarray(x_batch, dtype='float32')
         y_batch = np.asarray(y_batch, dtype='float32')
+
         yield (x_batch, y_batch)
