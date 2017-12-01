@@ -157,7 +157,7 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
     model.compile(loss='mean_squared_error', optimizer=adam, metrics=['acc', 'mae'])
 
     # Plot model
-    # plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
+    #plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
     # TODO: ImportError: Failed to import pydot. You must install pydot and graphviz for `pydotprint` to work.
 
 
@@ -243,7 +243,7 @@ def main():
     # Parser
     parser = argparse.ArgumentParser(description='Behavioral Cloning Training Program')
     parser.add_argument('-d', help='data directory', dest='data_dir', type=str, default='rec_data')
-    parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.2)
+    parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.05)
     parser.add_argument('-k', help='drop out probability', dest='drop_prob', type=float, default=0.5)
     parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=10)
     parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=40)

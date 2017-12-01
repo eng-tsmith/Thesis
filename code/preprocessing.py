@@ -7,7 +7,7 @@ from sklearn.utils import shuffle
 import logging
 
 
-IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 66, 3 #66, 200, 3
+IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3 #66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
 
@@ -381,7 +381,7 @@ def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
                 # Preprocessing goes for all data
                 x_batch[sample_index] = preprocess(image)
                 label_speed = normalize_speed(y_data[sample_index][1])
-                y_batch[sample_index] = np.array([label_steer, label_speed])
+                y_batch[sample_index] = np.asarray([label_steer, label_speed])
 
         # Keeps track of which image has already been seen
         curr_image += batch_size

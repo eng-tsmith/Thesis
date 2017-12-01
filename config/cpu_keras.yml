@@ -28,3 +28,5 @@ dependencies:
         - kivy.deps.sdl2
         - kivy.deps.glew
         - kivy==1.10.0
+        - graphviz
+        - pydot

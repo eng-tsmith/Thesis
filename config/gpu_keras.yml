@@ -21,10 +21,12 @@ dependencies:
     - pip:
         - moviepy
         - tensorflow-gpu==1.4.0
-        - keras==2.0.9
+        - keras==2.1.1
         - docutils
         - pygments
         - pypiwin32
         - kivy.deps.sdl2
         - kivy.deps.glew
         - kivy==1.10.0
+        - graphviz
+        - pydot
