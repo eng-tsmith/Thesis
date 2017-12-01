@@ -28,6 +28,7 @@ for i in p:
     image = i[0][0]
     train = i[1][0]
 
+    print('Print may not work cause of normalization. Plot function rounds floats to int. --RGB = 0,0,0>')
     print(train)
     plot_image(image)
     print(i[1][5])

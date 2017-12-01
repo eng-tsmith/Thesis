@@ -7,7 +7,7 @@ from sklearn.utils import shuffle
 import logging
 
 
-IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
+IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 66, 3 #66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
 
@@ -135,7 +135,8 @@ def crop(image):
     :param image:
     :return:
     """
-    return image[60:-25, :, :] # remove the sky and the car front
+    h, w = image.shape[0], image.shape[1]
+    return image[60:h - 23, 0:w]#  image[60:-25, :, :] # remove the sky and the car front
 
 
 def resize(image):
@@ -162,6 +163,10 @@ def preprocess(image):
     """
     image = crop(image)
     image = resize(image)
+    # Normalize
+    image = np.asarray(image, dtype=np.float32)
+    image = image / 255.0 - 0.5
+    #logging.info(image)
     # This may become interesting when taking images from real camera
     #image = rgb2yuv(image
     return image
@@ -265,7 +270,7 @@ def normalize_speed(speed):
     :param speed:
     :return:
     """
-    return speed / 31.0 - 0.5
+    return speed / 31.0 - 0.5 #TODO check if mph or m/s
 
 
 def augment(data_dir, center, left, right, steering_angle, range_x=100, range_y=10):

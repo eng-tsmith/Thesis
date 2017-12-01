@@ -151,7 +151,7 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
                               write_images=True)
 
     # Optimizer
-    adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+    adam = Adam(lr=args.learning_rate) #), beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
     # Compile model
     model.compile(loss='mean_squared_error', optimizer=adam, metrics=['acc', 'mae'])
