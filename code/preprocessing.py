@@ -31,10 +31,10 @@ def center_val_data(X_in):
     return X_out
 
 
-def l_c_r_data(x_in, y_in, angle_adj=0.2):
+def l_c_r_data(x_in, y_in, angle_adj=0.25):
     """
     Reshape array and adjust angle of left and right images
-    :param x_in:
+    :param x_in: center left right
     :param y_in:
     :param angle_adj:
     :return:

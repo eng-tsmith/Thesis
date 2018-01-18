@@ -1,0 +1,26 @@
+http://justinwatson.name/2017/02/10/Setting_up_pydot_for_Python_3_5_Keras_Conda_Windows_64.html
+
+1 Install graphviz for windows from the graphviz website.
+
+2 Add the directory bin of Graphviz to your environment variable “PATH”.
+	C:\Program Files (x86)\Graphviz2.38\bin
+	
+3 Activate Environment
+	source activate gpu-keras
+	
+4 Install pydot_ng in conda using the following command:
+	pip install git+https://github.com/pydot/pydot-ng.git
+	
+5 Install Graphviz python package
+	pip install graphviz
+	
+6 Test if graphviz executables are found:
+	import pydot_ng as pydot
+	print(pydot.find_graphviz())
+		>>>	{'neato': 'C:\\Program Files (x86)\\Graphviz2.38\\bin\\neato.exe', 'twopi': 'C:\\Program Files (x86)\\Graphviz2.38\\bin\\twopi.exe', 'sfdp': 'C:\\Program Files (x86)\\Graphviz2.38\
+		>>>	\bin\\sfdp.exe', 'fdp': 'C:\\Program Files (x86)\\Graphviz2.38\\bin\\fdp.exe', 'dot': 'C:\\Program Files (x86)\\Graphviz2.38\\bin\\dot.exe', 'circo': 'C:\\Program Files (x86)\\Grap
+		>>>	hviz2.38\\bin\\circo.exe'}
+
+7 If not found manually add them in python script:
+	import os     
+	os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'

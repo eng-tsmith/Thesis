@@ -1,5 +1,6 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -99,7 +100,7 @@ def load_data_with_speed(args, print_enabled=False):
     # Split dataset to train and validation set
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=args.test_size, random_state=0)
 
-    # Divide into single images (center, left and right) and flatten train data (get rid of too many steering angles 0.0)
+    # Divide into single images (center, left and right), adjust sterring angle for left and right images, and flatten train data (get rid of too many steering angles 0.0)
     X_train, y_train = l_c_r_data(X_train, y_train)
     X_train, y_train = flatten_data(X_train, y_train, print_enabled=print_enabled)
 
@@ -157,10 +158,8 @@ def train_model(model, NN_name, args, X_train, X_valid, y_train, y_valid):
     model.compile(loss='mean_squared_error', optimizer=adam, metrics=['acc', 'mae'])
 
     # Plot model
-    #plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
+    plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
     # TODO: ImportError: Failed to import pydot. You must install pydot and graphviz for `pydotprint` to work.
-
-
 
     # Start Training
     model.fit_generator(batch_generator2(args.data_dir, X_train, y_train, args.batch_size, True),
