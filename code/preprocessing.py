@@ -270,7 +270,8 @@ def normalize_speed(speed):
     :param speed:
     :return:
     """
-    return speed / 31.0 - 0.5 #TODO check if mph or m/s
+    max_speed = 50.0
+    return speed / max_speed - 0.5
 
 
 def augment(data_dir, center, left, right, steering_angle, range_x=100, range_y=10):
@@ -350,6 +351,7 @@ def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
         y_data = y_in[curr_image:future_index]
 
         x_batch = np.empty([batch_size, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS])
+
         if y_in.ndim == 1:
             y_batch = np.empty(batch_size)
         elif y_in.ndim == 2:
@@ -385,6 +387,8 @@ def batch_generator2(data_dir, x_in, y_in, batch_size, is_training):
 
         # Keeps track of which image has already been seen
         curr_image += batch_size
+
+
 
         # Yield as numpy array for tensorflow backend
         x_batch = np.asarray(x_batch, dtype='float32')

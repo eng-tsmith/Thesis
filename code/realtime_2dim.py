@@ -48,19 +48,23 @@ def telemetry(sid, data):
         # The current speed of the car
         speed = float(data["speed"])
         # The current image from the center camera of the car
-        image_src = Image.open(BytesIO(base64.b64decode(data["image"])))
+        img_str = data["image"]
+        image_src = Image.open(BytesIO(base64.b64decode(img_str)))
         try:
             image = np.asarray(image_src)       # from PIL image to numpy array
             image = preprocessing.preprocess(image)  # apply the preprocessing
-            image = np.array([image])       # the model expects 4D array
+            #image = np.asarray(image, dtype=np.float32)       # the model expects 4D array
 
             # predict the steering angle for the image
-            steering_angle, speed_pred = model.predict(image, batch_size=1)[0]
+            steering_angle, speed_pred = model.predict(image[None, :, :, :], batch_size=1)[0]
+            logging.info(model.predict(image[None, :, :, :], batch_size=1)[0])
+
 
             # Source Lectron Castle
             # https://github.com/electroncastle/behavioral_cloning/blob/master/drive.py
             # Convert the normalized speed to mph
-            speed_pred = (speed_pred + 0.5) * 31.0 #TODO check if mph or m/s
+            max_speed = 50.0 #also seen in preprocessing.normalize_speed()
+            speed_pred = (speed_pred + 0.5) * max_speed
 
             # Get the difference between the desired speed and the current car speed
             speed_error = speed_pred - speed
@@ -81,16 +85,17 @@ def telemetry(sid, data):
             else:
                 throttle = Kp * (speed_error + speed_integrated * Ki)
 
-            logging.info("sa: {:.4f}  \tacc: {:.4f}  \tv_err: {:.4f}  \tv: {:.4f}\tv_int: {:.4f}".format(steering_angle, throttle, speed_error, speed, speed_integrated))
+            logging.info("sa: {:.4f}  \tacc: {:.4f}  \tv_err: {:.4f}  \tv_current: {:.4f}   \tv_int: {:.4f}".format(steering_angle, throttle, speed_error, speed, speed_integrated))
 
             send_control(steering_angle, throttle)
 
             # Extra gui
             if EXTRA_GUI:
                 cv2.imshow('Center camera', cv2.cvtColor(np.asarray(image_src), cv2.COLOR_RGB2BGR))
-                cv2.imshow('CNN input', cv2.cvtColor(image[0], cv2.COLOR_RGB2BGR))
+                cv2.imshow('CNN input', cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
                 cv2.waitKey(1)
-        except Exception as e: logging.info(e)
+        except Exception as e:
+            logging.info(e)
     else:
         sio.emit('manual', data={}, skip_sid=True)
 
@@ -148,4 +153,4 @@ if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:/Users/ga29mos/Dev/Thesis/code/logs/label_array/model-002.h5')
+    run('C:/ProgramData/Thesis/code/logs/1516290512.150514/model-003.h5')

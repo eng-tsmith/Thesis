@@ -59,7 +59,7 @@ def load_data(args, print_enabled=False):
     y = data['steering'].values
 
     # Split dataset to train and validation set
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=args.test_size, random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=args.test_size, random_state=5)
 
     # Divide into single images (center, left and right) and flatten train data (get rid of too many steering angles 0.0)
     X_train, y_train = l_c_r_data(X_train, y_train)
@@ -244,8 +244,8 @@ def main():
     parser.add_argument('-d', help='data directory', dest='data_dir', type=str, default='rec_data')
     parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.05)
     parser.add_argument('-k', help='drop out probability', dest='drop_prob', type=float, default=0.5)
-    parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=10)
-    parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=40)
+    parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=30)
+    parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=512)
     parser.add_argument('-o', help='save best models only', dest='save_best_only', type=s2b, default='true')
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=1.0e-4)
     parser.add_argument('-e', help='experiment name', dest='exp_name', type=str, default=str(time.time()))
