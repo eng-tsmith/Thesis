@@ -11,7 +11,7 @@ def build_model(args, input_shape):
     name = 'ElectronGuy'
     l2_weight_decay = 1e-5
 
-    '''inputs = Input(shape=input_shape, name='main_input')
+    inputs = Input(shape=input_shape, name='main_input')
     #norm = Lambda(lambda x: x / 127.5 - 1.0, input_shape=input_shape, name='norm_layer')(inputs)
     #norm = BatchNormalization(input_shape=input_shape, axis=1, name='norm_layer')(inputs)
 
@@ -53,47 +53,47 @@ def build_model(args, input_shape):
     output = Dense(2, activation='linear', kernel_regularizer=l2(0.0), name='fc_layer_5')(dense4)
 
     model = Model(inputs=inputs, outputs=output)
-    model.summary()'''
-
-    model = Sequential()
-
-    model.add(Conv2D(16, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay), input_shape=input_shape))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(16, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    model.add(Conv2D(32, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Activation('relu'))
-    model.add(Conv2D(32, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(.5))
-
-    model.add(Conv2D(64, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Activation('elu'))
-    model.add(Conv2D(64, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Activation('elu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(.5))
-
-    model.add(Conv2D(128, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Activation('elu'))
-    model.add(Conv2D(128, (3, 3), strides=(2, 2), padding='same', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Activation('elu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(.5))
-
-    model.add(Flatten())
-    model.add(Dense(128, activation='elu', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Dropout(.5))
-    model.add(Dense(96, activation='elu', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Dropout(.5))
-    model.add(Dense(64, activation='elu', kernel_regularizer=l2(l2_weight_decay)))
-    model.add(Dense(10, activation='elu', kernel_regularizer=l2(l2_weight_decay)))
-
-    model.add(Dense(2, activation='linear', kernel_regularizer=l2(0.0)))
     model.summary()
+
+    # model = Sequential()
+    #
+    # model.add(Conv2D(16, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay), input_shape=input_shape))
+    # model.add(Activation('relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Conv2D(16, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Activation('relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    #
+    # model.add(Conv2D(32, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Activation('relu'))
+    # model.add(Conv2D(32, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Activation('relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Dropout(.5))
+    #
+    # model.add(Conv2D(64, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Activation('elu'))
+    # model.add(Conv2D(64, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Activation('elu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Dropout(.5))
+    #
+    # model.add(Conv2D(128, (3, 3), strides=(1, 1), padding='same', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Activation('elu'))
+    # model.add(Conv2D(128, (3, 3), strides=(2, 2), padding='same', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Activation('elu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Dropout(.5))
+    #
+    # model.add(Flatten())
+    # model.add(Dense(128, activation='elu', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Dropout(.5))
+    # model.add(Dense(96, activation='elu', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Dropout(.5))
+    # model.add(Dense(64, activation='elu', kernel_regularizer=l2(l2_weight_decay)))
+    # model.add(Dense(10, activation='elu', kernel_regularizer=l2(l2_weight_decay)))
+    #
+    # model.add(Dense(2, activation='linear', kernel_regularizer=l2(0.0)))
+    # model.summary()
 
     return model, name

@@ -47,7 +47,7 @@ class PIDController:
         self.derivator = 0.0
 
         self.integrator_min = 500.0
-        self.integrator_max = -500.0
+        self.integrator_max = 0.0
 
     def set_desired(self, desired):
         self.set_point = desired
@@ -82,7 +82,7 @@ class PIDController:
         return self.integrator
 
 
-pid_controller = PIDController(0.1, 0.002, 0.0)
+pid_controller = PIDController(1.0, 1.0, 1.0)
 pid_controller.set_desired(0.0)
 
 # registering event handler for the server
@@ -125,7 +125,7 @@ def telemetry(sid, data):
             # else:
             #     throttle = Kp * (speed_error + speed_integrated * Ki)
 
-            logging.info("sa: {:.4f}  \tacc: {:.4f}  \tv_err: {:.4f}  \tv_current: {:.4f}   \tv_int: {:.4f}".format(desired_steering_angle, throttle, pid_controller.get_error(), speed, pid_controller.get_integrated()))
+            logging.info("sa: {:.4f}  \tacc: {:.4f}  \tv_err: {:.4f}  \tv_current: {:.4f}   \tv_int: {:.4f}".format(desired_steering_angle, throttle, pid_controller.get_error(), speed, pid_controller.get_integrator()))
 
             send_control(desired_steering_angle, throttle)
 
@@ -193,4 +193,4 @@ if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:/ProgramData/Thesis/code/logs/1516290512.150514/model-003.h5')
+    run('C:/Users/ga29mos/Documents/Thesis/code/logs/1516373273.165854/model-010.h5')
