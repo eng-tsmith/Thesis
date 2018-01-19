@@ -29,7 +29,7 @@ if not test_speed:
     X_train, X_valid, y_train, y_valid = load_data(arg, print_enabled=False)
     p = batch_generator2(data_dir, X_train, y_train, batch_size, False)
 else:
-    X_train, X_valid, y_train, y_valid = load_data_with_speed(arg, print_enabled=False)
+    X_train, X_valid, y_train, y_valid = load_data_with_speed(arg, print_enabled=True)
     p = batch_generator2(data_dir, X_train, y_train, batch_size, False)
 
 cv2.namedWindow('CNN input', cv2.WINDOW_NORMAL)

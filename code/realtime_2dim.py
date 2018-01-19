@@ -33,61 +33,101 @@ Ki = 0.01 # I gain
 # Integration buffer for the PI speed controller
 speed_integrated = 0
 
+
+class PIDController:
+    def __init__(self, kp, ki, kd):
+        self.Kp = kp
+        self.Ki = ki
+        self.Kd = kd
+
+        self.set_point = 0.0
+        self.error = 0.0
+
+        self.integrator = 0.0
+        self.derivator = 0.0
+
+        self.integrator_min = 500.0
+        self.integrator_max = -500.0
+
+    def set_desired(self, desired):
+        self.set_point = desired
+        # self.integrator = 0.0  # TODO check if necessary
+        # self.derivator = 0.0
+
+    def update(self, current_value):
+        self.error = self.set_point - current_value
+
+        p_value = self.Kp * self.error
+        d_value = self.Kd * (self.error - self.derivator)
+
+        self.derivator = self.error
+        self.integrator += self.error
+
+        # windup limiter
+        if self.integrator > self.integrator_max:
+            self.integrator = self.integrator_max
+        elif self.integrator < self.integrator_min:
+            self.integrator = self.integrator_min
+
+        i_value = self.Ki * self.integrator
+
+        pid = p_value + i_value + d_value
+
+        return pid
+
+    def get_error(self):
+        return self.error
+
+    def get_integrator(self):
+        return self.integrator
+
+
+pid_controller = PIDController(0.1, 0.002, 0.0)
+pid_controller.set_desired(0.0)
+
 # registering event handler for the server
 @sio.on('telemetry')
 def telemetry(sid, data):
-    global Kp
-    global Ki
-    global speed_integrated
-    global speed_limit
+    global pid_controller
+
     if data:
-        # The current steering angle of the car
+        # Get current data of car
         steering_angle = float(data["steering_angle"])
-        # The current throttle of the car, how hard to push peddle
         throttle = float(data["throttle"])
-        # The current speed of the car
         speed = float(data["speed"])
-        # The current image from the center camera of the car
         img_str = data["image"]
         image_src = Image.open(BytesIO(base64.b64decode(img_str)))
+
         try:
-            image = np.asarray(image_src)       # from PIL image to numpy array
-            image = preprocessing.preprocess(image)  # apply the preprocessing
-            #image = np.asarray(image, dtype=np.float32)       # the model expects 4D array
+            # Preprocessing
+            image = np.asarray(image_src)
+            image = preprocessing.preprocess(image)
 
             # predict the steering angle for the image
-            steering_angle, speed_pred = model.predict(image[None, :, :, :], batch_size=1)[0]
-            logging.info(model.predict(image[None, :, :, :], batch_size=1)[0])
+            desired_steering_angle, desired_speed = model.predict(image[None, :, :, :], batch_size=1)[0]
 
+            # Denormalize speed (also seen in preprocessing.normalize_speed())
+            max_speed = 50.0
+            desired_speed = (desired_speed + 0.5) * max_speed
 
-            # Source Lectron Castle
-            # https://github.com/electroncastle/behavioral_cloning/blob/master/drive.py
-            # Convert the normalized speed to mph
-            max_speed = 50.0 #also seen in preprocessing.normalize_speed()
-            speed_pred = (speed_pred + 0.5) * max_speed
+            # Control speed
+            pid_controller.set_desired(desired_speed)
+            throttle = pid_controller.update(float(speed))
 
-            # Get the difference between the desired speed and the current car speed
-            speed_error = speed_pred - speed
+            # # Calculate the throttle value and decide when to go to neutral or break.
+            # # Break is activated by negative throttle
+            # if pid_controller.get_error() < - 3:
+            #     # Break
+            #     throttle = -1
+            # elif speed_error < 0:
+            #     # Neutral
+            #     throttle = 0
+            # else:
+            #     throttle = Kp * (speed_error + speed_integrated * Ki)
 
-            # Integrate the speed errors
-            speed_integrated += speed_error
-            # windup limiter
-            speed_integrated = max(0, speed_integrated)
+            logging.info("sa: {:.4f}  \tacc: {:.4f}  \tv_err: {:.4f}  \tv_current: {:.4f}   \tv_int: {:.4f}".format(desired_steering_angle, throttle, pid_controller.get_error(), speed, pid_controller.get_integrated()))
 
-            # Calculate the throttle value and decide when to go to neutral or break.
-            # Break is activated by negative throttle
-            if speed_error < - 3:
-                # Break
-                throttle = -1
-            elif speed_error < 0:
-                # Neutral
-                throttle = 0
-            else:
-                throttle = Kp * (speed_error + speed_integrated * Ki)
-
-            logging.info("sa: {:.4f}  \tacc: {:.4f}  \tv_err: {:.4f}  \tv_current: {:.4f}   \tv_int: {:.4f}".format(steering_angle, throttle, speed_error, speed, speed_integrated))
-
-            send_control(steering_angle, throttle)
+            send_control(desired_steering_angle, throttle)
 
             # Extra gui
             if EXTRA_GUI:

@@ -1,6 +1,7 @@
-http://justinwatson.name/2017/02/10/Setting_up_pydot_for_Python_3_5_Keras_Conda_Windows_64.html
+﻿http://justinwatson.name/2017/02/10/Setting_up_pydot_for_Python_3_5_Keras_Conda_Windows_64.html
 
 1 Install graphviz for windows from the graphviz website.
+	https://graphviz.gitlab.io/download/
 
 2 Add the directory bin of Graphviz to your environment variable “PATH”.
 	C:\Program Files (x86)\Graphviz2.38\bin
