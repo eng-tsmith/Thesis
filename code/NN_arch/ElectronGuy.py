@@ -97,4 +97,3 @@ def build_model(args, input_shape):
     model.summary()
 
     return model, name
-
