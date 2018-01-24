@@ -51,22 +51,40 @@ def divide_images(images_all, labels, angle_adj=0.2):
     return x_out, y_out
 
 
-def load_data(args, print_enabled=False):
+def load_data(args, data_dir=None, print_enabled=False):
     df_all = pd.DataFrame(columns=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
 
-    for subdir, dirs, files in os.walk(args.data_dir):
-        for file in files:
-            if file == 'driving_log.csv':
-                logging.info("Loading : " + os.path.join(subdir, file))
-                try:
-                    if dirs[0] != 'IMG':
-                        logging.info("Missing IMG directory in " + subdir)
+    if data_dir:
+        for part in data_dir:
+            part = os.path.join(args.data_dir, part)
+            for subdir, dirs, files in os.walk(part):
+                for file in files:
+                    if file == 'driving_log.csv':
+                        logging.info("Loading : " + os.path.join(subdir, file))
+                        try:
+                            if dirs[0] != 'IMG':
+                                logging.info("Missing IMG directory in " + subdir)
+                                break
+                        except IndexError:
+                            logging.info("No directories!")
+                            break
+                        df_new = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+                        df_all = df_all.append(df_new)
+
+    else:
+        for subdir, dirs, files in os.walk(args.data_dir):
+            for file in files:
+                if file == 'driving_log.csv':
+                    logging.info("Loading : " + os.path.join(subdir, file))
+                    try:
+                        if dirs[0] != 'IMG':
+                            logging.info("Missing IMG directory in " + subdir)
+                            break
+                    except IndexError:
+                        logging.info("No directories!")
                         break
-                except IndexError:
-                    logging.info("No directories!")
-                    break
-                df_new = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
-                df_all = df_all.append(df_new)
+                    df_new = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+                    df_all = df_all.append(df_new)
 
     images_all = df_all[['center', 'left', 'right']].values
     labels = df_all[['steering', 'speed']].values
@@ -172,7 +190,7 @@ def main():
     # ----------------------------------------------------------------------------
     # Parser
     parser = argparse.ArgumentParser(description='Behavioral Cloning Training Program')
-    parser.add_argument('-p', help='data directory', dest='data_dir', type=str, default='rec_data')
+    parser.add_argument('-p', help='data directory', dest='data_dir', type=str, default='./rec_data')
     parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.05)
     parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=100)
     parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=32)
@@ -182,6 +200,7 @@ def main():
     parser.add_argument('-s', help='predict speed', dest='pred_speed', type=s2b, default='true')
     parser.add_argument('-f', help='flatten data', dest='flatten', type=s2b, default='true')
     parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')
+    parser.add_argument('-a', help='use all data', dest='all_data', type=s2b, default='true')
     args = parser.parse_args()
 
     # ----------------------------------------------------------------------------
@@ -207,8 +226,24 @@ def main():
     # ----------------------------------------------------------------------------
     # load data
     logging.info('Loading data...')
+
+    # Manual train data definition
+    data_dirs_train = [
+        './data_0',
+        './data_1'
+    ]
+    # Manual val data definition
+    data_dirs_val = [
+        './data_2',
+        './data_3'
+    ]
+    if not args.all_data:
+        data_dir_all = data_dirs_train + data_dirs_val
+    else:
+        data_dir_all = None
+
     try:
-        data = load_data(args)
+        data = load_data(args, data_dir=data_dir_all)
         logging.info('Data loaded successfully')
         logging.info('Train on {} samples, validate on {} samples'.format(len(data[0]), len(data[1])))
     except Exception as e:
