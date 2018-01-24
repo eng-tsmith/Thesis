@@ -8,7 +8,7 @@ from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.utils.vis_utils import plot_model
 from keras.optimizers import Adam
 from NN_arch.ElectronGuy import build_model
-from preprocessing import INPUT_SHAPE, flatten_data, batch_generator2
+from preprocessing import INPUT_SHAPE, flatten_data, batch_generator
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -78,7 +78,7 @@ def load_data(args, print_enabled=False):
 
     if args.flatten:
         logging.info('Flatten data...')
-        x_train, y_train = flatten_data(x_train, y_train, print_enabled=False)
+        x_train, y_train = flatten_data(x_train, y_train, print_enabled=print_enabled)
 
     return x_train, x_valid, y_train, y_valid
 
@@ -98,14 +98,16 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
     # Save Hyperparameters
     with open(dir_log+'hyperparameters.csv', 'a') as csvfile:
         csv_writer = csv.writer(csvfile, delimiter=':')
-        csv_writer.writerow(['Experiment name', args.exp_name])
-        csv_writer.writerow(['NN architecture', nn_name])
-        csv_writer.writerow(['Learning rate', args.learning_rate])
-        csv_writer.writerow(['Batch size', args.batch_size])
-        csv_writer.writerow(['Number of epochs', args.nb_epoch])
-        # csv_writer.writerow(['Dropout probability', args.drop_prob])
-        csv_writer.writerow(['Test size fraction', args.test_size])
-        csv_writer.writerow(['Save best models only', args.save_best_only])
+        csv_writer.writerow(['Experiment name: ', args.exp_name])
+        csv_writer.writerow(['NN architecture: ', nn_name])
+        csv_writer.writerow(['Learning rate: ', args.learning_rate])
+        csv_writer.writerow(['Batch size: ', args.batch_size])
+        csv_writer.writerow(['Number of epochs: ', args.nb_epoch])
+        # csv_writer.writerow(['Dropout probability: ', args.drop_prob])
+        csv_writer.writerow(['Test size fraction: ', args.test_size])
+        csv_writer.writerow(['Save best models only: ', args.save_best_only])
+        csv_writer.writerow(['Flatten steering angle data: ', args.flatten])
+        csv_writer.writerow(['Label dimension: ', args.label_dim])
 
     # Callbacks
     checkpoint = ModelCheckpoint(dir_log + '/model-{epoch:03d}.h5',
@@ -131,12 +133,12 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
     plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
 
     # Start Training
-    model.fit_generator(batch_generator2(args.data_dir, x_train, y_train, args.batch_size, True),
+    model.fit_generator(batch_generator(args.data_dir, x_train, y_train, args.batch_size, args.label_dim, True),
                         steps_per_epoch=len(x_train)/args.batch_size,
                         epochs=args.nb_epoch,
                         verbose=1,
                         callbacks=[checkpoint, tensorboard],
-                        validation_data=batch_generator2(args.data_dir, x_valid, y_valid, args.batch_size, False),
+                        validation_data=batch_generator(args.data_dir, x_valid, y_valid, args.batch_size, args.label_dim, False),
                         validation_steps=len(x_valid)/args.batch_size,
                         max_queue_size=1)
 
@@ -170,15 +172,16 @@ def main():
     # ----------------------------------------------------------------------------
     # Parser
     parser = argparse.ArgumentParser(description='Behavioral Cloning Training Program')
-    parser.add_argument('-d', help='data directory', dest='data_dir', type=str, default='rec_data')
+    parser.add_argument('-p', help='data directory', dest='data_dir', type=str, default='rec_data')
     parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.05)
     parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=100)
-    parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=128)
+    parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=32)
     parser.add_argument('-o', help='save best models only', dest='save_best_only', type=s2b, default='true')
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=1e-4)
     parser.add_argument('-e', help='experiment name', dest='exp_name', type=str, default=str(time.time()))
     parser.add_argument('-s', help='predict speed', dest='pred_speed', type=s2b, default='true')
     parser.add_argument('-f', help='flatten data', dest='flatten', type=s2b, default='true')
+    parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')
     args = parser.parse_args()
 
     # ----------------------------------------------------------------------------
@@ -224,7 +227,6 @@ def main():
         logging.exception(e)
         logging.info('Model could not be built. Aborting')
         return
-
 
     # ----------------------------------------------------------------------------
     # Train model and save as model.h5

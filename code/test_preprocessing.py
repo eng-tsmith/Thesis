@@ -1,15 +1,16 @@
-from preprocessing import batch_generator2, batch_generator_old, plot_image
+from preprocessing import batch_generator
 import logging
 logging.basicConfig(level=logging.INFO)
-from train import load_data, load_data_with_speed
+from model import load_data
 import cv2
 import numpy as np
 
 
 class Args():
-    def __init__(self, data_dir, test_size):
+    def __init__(self, data_dir, test_size, flatten):
         self.data_dir = data_dir
         self.test_size = test_size
+        self.flatten = flatten
 
 ##############################
 # Test Pipeline
@@ -20,17 +21,20 @@ class Args():
 data_dir = './rec_data'
 test_size = 0.2
 batch_size = 32
-arg = Args(data_dir, test_size)
+flatten = True
+arg = Args(data_dir, test_size, flatten)
 
 test_speed = True
 
 # 1. Load Data
 if not test_speed:
+    label_dim = 1
     X_train, X_valid, y_train, y_valid = load_data(arg, print_enabled=False)
-    p = batch_generator2(data_dir, X_train, y_train, batch_size, False)
+    p = batch_generator(data_dir, X_train, y_train, batch_size, label_dim, False)
 else:
-    X_train, X_valid, y_train, y_valid = load_data_with_speed(arg, print_enabled=True)
-    p = batch_generator2(data_dir, X_train, y_train, batch_size, False)
+    label_dim = 2
+    X_train, X_valid, y_train, y_valid = load_data(arg, print_enabled=True)
+    p = batch_generator(data_dir, X_train, y_train, batch_size, label_dim, True)
 
 cv2.namedWindow('CNN input', cv2.WINDOW_NORMAL)
 

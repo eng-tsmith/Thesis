@@ -3,7 +3,10 @@ from scipy.misc import imsave
 import numpy as np
 import time
 from keras import backend as K
+import cv2
 
+# Manual deactivation of learning mode for backend functions
+K.set_learning_phase(0)
 
 # dimensions of the generated pictures for each filter.
 img_width = 200
@@ -11,7 +14,7 @@ img_height = 66
 
 # the name of the layer we want to visualize
 # (see model definition at keras/applications/vgg16.py)
-layer_name = 'conv2d_2'
+layer_name = 'conv2d_7'
 
 # util function to convert a tensor into a valid image
 
@@ -35,7 +38,7 @@ def deprocess_image(x):
 
 #https://blog.keras.io/how-convolutional-neural-networks-see-the-world.html
 # path to weights
-path_weights = './logs/1516373273.165854/model-005.h5'
+path_weights = './logs/1516295831.1448607/model-007.h5'
 
 # build model
 model = load_model(path_weights)
@@ -54,7 +57,7 @@ def normalize(x):
 
 
 kept_filters = []
-for filter_index in range(200):
+for filter_index in range(16):  #TODO no of filter
     # we only scan through the first 200 filters,
     # but there are actually 512 of them
     print('Processing filter %d' % filter_index)
@@ -63,10 +66,8 @@ for filter_index in range(200):
     # we build a loss function that maximizes the activation
     # of the nth filter of the layer considered
     layer_output = layer_dict[layer_name].output
-    if K.image_data_format() == 'channels_first':
-        loss = K.mean(layer_output[:, filter_index, :, :])
-    else:
-        loss = K.mean(layer_output[:, :, :, filter_index])
+
+    loss = K.mean(layer_output[:, :, :, filter_index])
 
     # we compute the gradient of the input picture wrt this loss
     grads = K.gradients(loss, input_img)[0]
@@ -102,26 +103,34 @@ for filter_index in range(200):
     print('Filter %d processed in %ds' % (filter_index, end_time - start_time))
 
 # we will stich the best 64 filters on a 8 x 8 grid.
-n = 8
+n = 4
 
 # the filters that have the highest loss are assumed to be better-looking.
 # we will only keep the top 64 filters.
 kept_filters.sort(key=lambda x: x[1], reverse=True)
-kept_filters = kept_filters[:n * n]
+# kept_filters = kept_filters[:n * n]
 
 # build a black picture with enough space for
 # our 8 x 8 filters of size 128 x 128, with a 5px margin in between
 margin = 5
 width = n * img_width + (n - 1) * margin
 height = n * img_height + (n - 1) * margin
-stitched_filters = np.zeros((width, height, 3))
+stitched_filters = np.zeros((height, width, 3))
 
-# fill the picture with our saved filters
-for i in range(n):
-    for j in range(n):
-        img, loss = kept_filters[i * n + j]
-        stitched_filters[(img_width + margin) * i: (img_width + margin) * i + img_width,
-                         (img_height + margin) * j: (img_height + margin) * j + img_height, :] = img
 
-# save the result to disk
-imsave('stitched_filters_%dx%d.png' % (n, n), stitched_filters)
+# # fill the picture with our saved filters
+# for i in range(len(stitched_filters)):  # TODO range 3 and 4
+#     img, loss = kept_filters[i]
+#     stitched_filters[(img_height + margin) * i: (img_height + margin) * i + img_height, (img_width + margin) * i: (img_width + margin) * i + img_width, :] = img
+
+cv2.namedWindow('CNN input', cv2.WINDOW_NORMAL)
+
+
+for i in range(len(kept_filters)):
+    img, loss = kept_filters[i]
+    cv2.imshow('CNN input', cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    cv2.waitKey(10000)
+
+
+# # save the result to disk
+# imsave('stitched_filters_%dx%d.png' % (n, n), kept_filters)
