@@ -164,6 +164,16 @@ def rgb2yuv(image):
     return cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
 
 
+def normalize_img(image):
+    img = image / 255.0 - 0.5
+    return img
+
+
+def denormalize_img(image):
+    img = (image + 0.5) * 255.
+    return img
+
+
 def preprocess(image):
     """
     Combine all preprocess functions into one
@@ -172,7 +182,7 @@ def preprocess(image):
     image = resize(image)
     # Normalize
     image = np.asarray(image, dtype=np.float32)
-    image = image / 255.0 - 0.5
+    image = normalize_img(image)
 
     # This may become interesting when taking images from real camera for speed optimization
     # image = rgb2yuv(image
