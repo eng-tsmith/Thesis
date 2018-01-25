@@ -1,9 +1,10 @@
-from preprocessing import batch_generator
+from preprocessing import batch_generator, flatten_data
 import logging
-logging.basicConfig(level=logging.INFO)
 from model import load_data
 import cv2
-import numpy as np
+from sklearn.model_selection import train_test_split
+
+logging.basicConfig(level=logging.INFO)
 
 
 class Args:
@@ -24,14 +25,11 @@ data_dir = './rec_data'
 test_size = 0.2
 batch_size = 32
 flatten = True
-all_data = True
+all_data = False
 
 args = Args(data_dir, test_size, flatten, all_data)
 
 test_speed = True
-
-
-
 
 # Manual train data definition
 data_dirs_train = [
@@ -44,20 +42,38 @@ data_dirs_val = [
     './data_3'
 ]
 
-if not args.all_data:
-    data_dir_all = data_dirs_train + data_dirs_val
-else:
-    data_dir_all = None
-
 # 1. Load Data
+try:
+    logging.info('Loading data...')
+
+    # Load data from CSV
+    if args.all_data:
+        x_data, y_data = load_data(args)
+        x_train, x_valid, y_train, y_valid = train_test_split(x_data, y_data, test_size=args.test_size, random_state=5)
+    else:
+        logging.info('Loading train data')
+        x_train, y_train = load_data(args, data_dir=data_dirs_train)
+        logging.info('Loading validation data')
+        x_valid, y_valid = load_data(args, data_dir=data_dirs_val)
+
+    # Flatten distribution of steering angles
+    if args.flatten:
+        logging.info('Flatten data...')
+        x_train, y_train = flatten_data(x_train, y_train, print_enabled=False)
+
+    logging.info('Data loaded successfully')
+    logging.info('Train on {} samples, validate on {} samples'.format(len(x_train), len(x_valid)))
+except Exception as e:
+    logging.exception(e)
+    logging.info('Data could not be loaded. Aborting')
+
+
 if not test_speed:
     label_dim = 1
-    X_train, X_valid, y_train, y_valid = load_data(args, data_dir=data_dir_all, print_enabled=False)
-    p = batch_generator(data_dir, X_train, y_train, batch_size, label_dim, False)
+    p = batch_generator(data_dir, x_train, y_train, batch_size, label_dim, False)
 else:
     label_dim = 2
-    X_train, X_valid, y_train, y_valid = load_data(args, data_dir=data_dir_all, print_enabled=True)
-    p = batch_generator(data_dir, X_train, y_train, batch_size, label_dim, True)
+    p = batch_generator(data_dir, x_train, y_train, batch_size, label_dim, True)
 
 cv2.namedWindow('CNN input', cv2.WINDOW_NORMAL)
 

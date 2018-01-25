@@ -3,7 +3,7 @@ import argparse
 import time
 import csv
 import logging
-from keras import backend as K
+from keras import backend as k_backend
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.utils.vis_utils import plot_model
 from keras.optimizers import Adam
@@ -19,14 +19,14 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 # Select GPU
-if K.backend() == 'tensorflow':
+if k_backend.backend() == 'tensorflow':
     import tensorflow as tf
     from keras.backend.tensorflow_backend import set_session
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.gpu_options.visible_device_list = "0"
     sess = tf.Session(config=config)
-    K.set_session(sess)
+    k_backend.set_session(sess)
 # ----------------------------------------------------------------------------
 
 
@@ -51,7 +51,14 @@ def divide_images(images_all, labels, angle_adj=0.2):
     return x_out, y_out
 
 
-def load_data(args, data_dir=None, print_enabled=False):
+def load_data(args, data_dir=None):
+    """
+    Loads data from CSV file. Depending on data_dir it either loads all data in the root folder or only the ones defined
+    in data_dir.
+    :param args: arg parser
+    :param data_dir: directory where CSVs are located. For all subdirectories data_dir = None
+    :return: Returns the images(x_data) and labels(y_data)
+    """
     df_all = pd.DataFrame(columns=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
 
     if data_dir:
@@ -68,7 +75,9 @@ def load_data(args, data_dir=None, print_enabled=False):
                         except IndexError:
                             logging.info("No directories!")
                             break
-                        df_new = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+                        df_new = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)),
+                                             names=['center', 'left', 'right',
+                                                    'steering', 'throttle', 'reverse', 'speed'])
                         df_all = df_all.append(df_new)
 
     else:
@@ -83,7 +92,9 @@ def load_data(args, data_dir=None, print_enabled=False):
                     except IndexError:
                         logging.info("No directories!")
                         break
-                    df_new = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+                    df_new = pd.read_csv(os.path.join(os.getcwd(), os.path.join(subdir, file)),
+                                         names=['center', 'left', 'right',
+                                                'steering', 'throttle', 'reverse', 'speed'])
                     df_all = df_all.append(df_new)
 
     images_all = df_all[['center', 'left', 'right']].values
@@ -91,19 +102,20 @@ def load_data(args, data_dir=None, print_enabled=False):
 
     x_data, y_data = divide_images(images_all, labels)
 
-    # Split dataset to train and validation set
-    x_train, x_valid, y_train, y_valid = train_test_split(x_data, y_data, test_size=args.test_size, random_state=5)
-
-    if args.flatten:
-        logging.info('Flatten data...')
-        x_train, y_train = flatten_data(x_train, y_train, print_enabled=print_enabled)
-
-    return x_train, x_valid, y_train, y_valid
+    return x_data, y_data
 
 
 def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
     """
-    Train the model
+    Function to train model. Saves all parameters to CSV file for every experiment. Measures time of training.
+    :param model: built Keras model
+    :param nn_name: name of neural net
+    :param args: arg parser
+    :param x_train: image for training
+    :param x_valid: image for validation
+    :param y_train: label for training
+    :param y_valid: label for validation
+    :return:
     """
     # Time measurements
     start = time.time()
@@ -156,7 +168,8 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
                         epochs=args.nb_epoch,
                         verbose=1,
                         callbacks=[checkpoint, tensorboard],
-                        validation_data=batch_generator(args.data_dir, x_valid, y_valid, args.batch_size, args.label_dim, False),
+                        validation_data=batch_generator(args.data_dir, x_valid, y_valid,
+                                                        args.batch_size, args.label_dim, False),
                         validation_steps=len(x_valid)/args.batch_size,
                         max_queue_size=1)
 
@@ -175,6 +188,8 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
 def s2b(s):
     """
     Converts a string to boolean value
+    :param s: string
+    :return: boolean
     """
     s = s.lower()
     return s == 'true' or s == 'yes' or s == 'y' or s == '1'
@@ -182,7 +197,8 @@ def s2b(s):
 
 def main():
     """
-    Load train/validation data set and train the model
+    Main function. Load train/validation data set, build model and train model
+    :return:
     """
     # ----------------------------------------------------------------------------
     # Logging
@@ -204,7 +220,7 @@ def main():
     args = parser.parse_args()
 
     # ----------------------------------------------------------------------------
-    # print parameters
+    # Print parameters
     logging.info('=' * 30)
     logging.info('=' * 30)
     logging.info('Behavioral Cloning Training Program')
@@ -224,7 +240,7 @@ def main():
     logging.info('=' * 30)
     logging.info('=' * 30)
     # ----------------------------------------------------------------------------
-    # load data
+    # Load data
     logging.info('Loading data...')
 
     # Manual train data definition
@@ -237,19 +253,29 @@ def main():
         './data_2',
         './data_3'
     ]
-    if not args.all_data:
-        data_dir_all = data_dirs_train + data_dirs_val
-    else:
-        data_dir_all = None
 
     try:
-        data = load_data(args, data_dir=data_dir_all)
+        if args.all_data:
+            x_data, y_data = load_data(args)
+            x_train, x_valid, y_train, y_valid = train_test_split(x_data, y_data,
+                                                                  test_size=args.test_size, random_state=5)
+        else:
+            logging.info('Loading train data')
+            x_train, y_train = load_data(args, data_dir=data_dirs_train)
+            logging.info('Loading validation data')
+            x_valid, y_valid = load_data(args, data_dir=data_dirs_val)
+
+        # Flatten distribution of steering angles
+        if args.flatten:
+            logging.info('Flatten data...')
+            x_train, y_train = flatten_data(x_train, y_train, print_enabled=False)
+
         logging.info('Data loaded successfully')
-        logging.info('Train on {} samples, validate on {} samples'.format(len(data[0]), len(data[1])))
+        logging.info('Train on {} samples, validate on {} samples'.format(len(x_train), len(x_valid)))
     except Exception as e:
         logging.exception(e)
         logging.info('Data could not be loaded. Aborting')
-        return
+        return -1
 
     # ----------------------------------------------------------------------------
     # build model
@@ -261,19 +287,19 @@ def main():
     except Exception as e:
         logging.exception(e)
         logging.info('Model could not be built. Aborting')
-        return
+        return -1
 
     # ----------------------------------------------------------------------------
     # Train model and save as model.h5
     logging.info('Training model...')
     try:
-        train_model(model, nn_name, args, *data)
+        train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid)
         logging.info('Training finished')
     except Exception as e:
         logging.exception(e)
         logging.info('Training error. Aborting')
-        return
-    return
+        return -1
+    return 0
 
 
 if __name__ == '__main__':

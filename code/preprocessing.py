@@ -21,15 +21,15 @@ def plot_image(image_display):
     plt.show()
 
 
-def center_val_data(X_in):
+def center_val_data(x_in):
     """
     Only consider center images
-    :param X_in:
+    :param x_in:
     :return:
     """
-    X_out = X_in[:, 0]
+    x_out = x_in[:, 0]
 
-    return X_out
+    return x_out
 
 
 def l_c_r_data(x_in, y_in, angle_adj=0.25):
@@ -54,18 +54,21 @@ def l_c_r_data(x_in, y_in, angle_adj=0.25):
     return x_out, y_out
 
 
-def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
+def flatten_data(x_in, y_in, num_bins=25, print_enabled=False):
     """
     print a histogram to see which steering angle ranges are most overrepresented
     print histogram again to show more even distribution of steering angles
 
     Source : https://github.com/jeremy-shannon/CarND-Behavioral-Cloning-Project/blob/master/model.py
-    :param X_in:
+    :param x_in:
     :param y_in:
     :param num_bins:
     :param print_enabled:
     :return:
     """
+    cent = None
+    width = None
+
     if y_in.ndim == 1:
         y_curr = y_in
     elif y_in.ndim == 2:
@@ -83,8 +86,9 @@ def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
         plt.plot((np.min(y_curr), np.max(y_curr)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
         plt.show()
 
-    # determine keep probability for each bin: if below avg_samples_per_bin, keep all; otherwise keep prob is proportional
-    # to number of samples above the average, so as to bring the number of samples for that bin down to the average
+    # determine keep probability for each bin: if below avg_samples_per_bin, keep all;
+    # otherwise keep prob is proportional to number of samples above the average,
+    # so as to bring the number of samples for that bin down to the average
     keep_probs = []
     target = avg_samples_per_bin * .5
     for i in range(num_bins):
@@ -101,7 +105,7 @@ def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
                     remove_list.append(i)
 
     y_out = np.delete(y_in, remove_list, 0)
-    X_out = np.delete(X_in, remove_list, 0)
+    x_out = np.delete(x_in, remove_list, 0)
 
     # print histogram again to show more even distribution of steering angles
     if print_enabled:
@@ -115,8 +119,8 @@ def flatten_data(X_in, y_in, num_bins=25, print_enabled=False):
         plt.plot((np.min(y_curr), np.max(y_curr)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
         plt.show()
 
-    logging.info('Data set distribution flattened. Data set size reduced from {} to {}'.format(X_in.size, X_out.size))
-    return X_out, y_out
+    logging.info('Data set distribution flattened. Data set size reduced from {} to {}'.format(x_in.size, x_out.size))
+    return x_out, y_out
 
 
 def load_image(data_dir, image_file):
@@ -126,7 +130,10 @@ def load_image(data_dir, image_file):
     :param image_file:
     :return:
     """
-    return mpimg.imread(os.path.join(data_dir, image_file.strip().split("\\")[-3], image_file.strip().split("\\")[-2], image_file.strip().split("\\")[-1]))
+    return mpimg.imread(os.path.join(data_dir,
+                                     image_file.strip().split("\\")[-3],
+                                     image_file.strip().split("\\")[-2],
+                                     image_file.strip().split("\\")[-1]))
 
 
 def crop(image):
@@ -165,9 +172,9 @@ def preprocess(image):
     image = resize(image)
     # Normalize
     image = np.asarray(image, dtype=np.float32)
-    image = image / 255.0 - 0.5  # TODO!!!!
+    image = image / 255.0 - 0.5
 
-    # This may become interesting when taking images from real camera
+    # This may become interesting when taking images from real camera for speed optimization
     # image = rgb2yuv(image
     return image
 
@@ -244,10 +251,9 @@ def normalize_speed(speed):
     return speed / max_speed - 0.5
 
 
-def augment(data_dir, image_path, steering_angle, range_x=100, range_y=10):
+def augment(data_dir, image_path, steering_angle):
     """
-    Generate an augmented image and adjust steering angle.
-    (The steering angle is associated with the center image)
+    Generate an augmented image and adjusts steering angle.
     """
     image = load_image(data_dir, image_path)
 
@@ -266,6 +272,7 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
     :param x_in:
     :param y_in:
     :param batch_size:
+    :param label_dim:
     :param is_training:
     """
     curr_image = 0
@@ -311,13 +318,14 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
                 # Only do data augmentation for training data with a probability of 60%
                 if is_training and np.random.rand() < 0.6:
                     image, label_steer = augment(data_dir, x_data[sample_index], y_data[sample_index][0])
+                    label_speed = normalize_speed(y_data[sample_index][1])
                 else:
                     image = load_image(data_dir, x_data[sample_index])
                     label_steer = y_data[sample_index][0]
+                    label_speed = normalize_speed(y_data[sample_index][1])
 
                 # Preprocessing goes for all data
                 x_batch[sample_index] = preprocess(image)
-                label_speed = normalize_speed(y_data[sample_index][1])
                 y_batch[sample_index] = np.asarray([label_steer, label_speed])
 
         # Keeps track of which image has already been seen

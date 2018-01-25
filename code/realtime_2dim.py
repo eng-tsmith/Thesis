@@ -1,13 +1,12 @@
-import base64 #decoding camera images
-import os #reading and writing files
-import shutil #high level file operations
+import base64
+import os
 import numpy as np
-import socketio #real-time server
-import eventlet #concurrent networking
-import eventlet.wsgi #web server gateway interface
+import socketio
+import eventlet
+import eventlet.wsgi
 from PIL import Image
 from flask import Flask
-from io import BytesIO #input output
+from io import BytesIO
 from keras.models import load_model
 import preprocessing
 import logging
@@ -27,11 +26,11 @@ speed_limit = MAX_SPEED
 
 EXTRA_GUI = True
 
-# PI controller
-Kp = 1/30.0 * 2.5   # P gain
-Ki = 0.01 # I gain
-# Integration buffer for the PI speed controller
-speed_integrated = 0
+# # PI controller
+# Kp = 1/30.0 * 2.5  # P gain
+# Ki = 0.01  # I gain
+# # Integration buffer for the PI speed controller
+# speed_integrated = 0
 
 
 class PIDController:
@@ -85,6 +84,7 @@ class PIDController:
 pid_controller = PIDController(1.0, 1.0, 1.0)
 pid_controller.set_desired(0.0)
 
+
 # registering event handler for the server
 @sio.on('telemetry')
 def telemetry(sid, data):
@@ -92,8 +92,8 @@ def telemetry(sid, data):
 
     if data:
         # Get current data of car
-        steering_angle = float(data["steering_angle"])
-        throttle = float(data["throttle"])
+        # steering_angle = float(data["steering_angle"])
+        # throttle = float(data["throttle"])
         speed = float(data["speed"])
         img_str = data["image"]
         image_src = Image.open(BytesIO(base64.b64decode(img_str)))
@@ -125,7 +125,8 @@ def telemetry(sid, data):
             # else:
             #     throttle = Kp * (speed_error + speed_integrated * Ki)
 
-            logging.info("sa: {:.4f}  \tacc: {:.4f}  \tv_err: {:.4f}  \tv_current: {:.4f}   \tv_int: {:.4f}".format(desired_steering_angle, throttle, pid_controller.get_error(), speed, pid_controller.get_integrator()))
+            logging.info("sa: {:.4f}  \tacc: {:.4f}  \tv_err: {:.4f}  \tv_current: {:.4f}   \tv_int: {:.4f}".format(
+                desired_steering_angle, throttle, pid_controller.get_error(), speed, pid_controller.get_integrator()))
 
             send_control(desired_steering_angle, throttle)
 
@@ -174,8 +175,8 @@ def run(path_to_model):
     if not os.path.exists('./data/'):
         os.makedirs('./data/')
     else:
-        #shutil.rmtree('./data/')
-        #os.makedirs('./data/')
+        # shutil.rmtree('./data/')
+        # os.makedirs('./data/')
         logging.info("RECORDING THIS RUN ...")
 
     # Initialize OpenCV image windows
@@ -189,8 +190,9 @@ def run(path_to_model):
     # deploy as an eventlet WSGI server
     eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
 
+
 if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:/Users/ga29mos/Documents/Thesis/code/logs/1516373273.165854/model-010.h5')
+    run('C:/ProgramData/Thesis/code/logs/1516790366.9310215/model-038.h5')
