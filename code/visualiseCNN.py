@@ -48,6 +48,7 @@ def main():
     # layer_name = 'conv_layer_3'
     # filter_index = 5
 
+    use_real_img = True
 
     path_weights = 'C:/ProgramData/Thesis/code/logs/1516790366.9310215/model-038.h5'
     path_image = '.\\data_0\\IMG\\center_2017_07_21_14_27_07_549.jpg'
@@ -91,10 +92,13 @@ def main():
         # this is the placeholder for the input images
         input_img = model.input
 
-        img = load_image(data_dir, path_image)
-        img = preprocess(img)
-        cv2.imshow('CNN layer visualisation', cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-        cv2.waitKey(2000)
+        if use_real_img:
+            img = load_image(data_dir, path_image)
+            img = preprocess(img)
+            cv2.imshow('CNN layer visualisation', cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+            cv2.waitKey(2000)
+        else:
+            img = np.random.random((img_height, img_width, 3)) * 20 + 128.
 
         # build a loss function that maximizes the activation
         # of the nth filter of the layer considered
@@ -121,9 +125,12 @@ def main():
             step = 1.
 
             # we start from a gray image with some noise
-            # input_img_data = np.random.random((1, img_height, img_width, 3)) * 20 + 128.
-            img = load_image(data_dir, path_image)
-            img = preprocess(img)
+            if use_real_img:
+                img = load_image(data_dir, path_image)
+                img = preprocess(img)
+            else:
+                img = np.random.random((img_height, img_width, 3)) * 20 + 128.
+
             input_img_data = img[None, :, :, :]
 
             # run gradient ascent for 20 steps

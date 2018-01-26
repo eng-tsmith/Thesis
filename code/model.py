@@ -216,7 +216,7 @@ def main():
     parser.add_argument('-s', help='predict speed', dest='pred_speed', type=s2b, default='true')
     parser.add_argument('-f', help='flatten data', dest='flatten', type=s2b, default='true')
     parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')
-    parser.add_argument('-a', help='use all data', dest='all_data', type=s2b, default='true')
+    parser.add_argument('-a', help='use all data', dest='all_data', type=s2b, default='false')
     args = parser.parse_args()
 
     # ----------------------------------------------------------------------------
@@ -245,13 +245,17 @@ def main():
 
     # Manual train data definition
     data_dirs_train = [
-        './data_0',
-        './data_1'
+        './berlin',
+        './jungle',
+        './lake',
+        './newyork',
+        './recovery',
+        './hongkong',
+        './hongkong2'
     ]
     # Manual val data definition
     data_dirs_val = [
-        './data_2',
-        './data_3'
+        './montreal'
     ]
 
     try:
