@@ -273,6 +273,7 @@ def main():
         if args.flatten:
             logging.info('Flatten data...')
             x_train, y_train = flatten_data(x_train, y_train, print_enabled=False)
+            x_valid, y_valid = flatten_data(x_valid, y_valid, print_enabled=False)
 
         logging.info('Data loaded successfully')
         logging.info('Train on {} samples, validate on {} samples'.format(len(x_train), len(x_valid)))

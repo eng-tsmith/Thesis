@@ -195,4 +195,4 @@ if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:/ProgramData/Thesis/code/logs/1516790366.9310215/model-038.h5')
+    run('C:/ProgramData/Thesis/code/logs/1517044193.003092/model-053.h5')
