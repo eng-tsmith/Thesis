@@ -3,6 +3,7 @@ import logging
 from model import load_data
 import cv2
 from sklearn.model_selection import train_test_split
+from preprocessing import plot_image, process_img_for_visualization
 
 logging.basicConfig(level=logging.INFO)
 
@@ -13,6 +14,8 @@ class Args:
         self.test_size = test_size
         self.flatten = flatten
         self.all_data = all_data
+
+
 
 
 ##############################
@@ -81,7 +84,14 @@ for i in p:
     image = i[0][0]
     train = i[1][0]
 
-    cv2.imshow('CNN input', cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+    # plot_image(image)
+
+    print(image)
+
+    # im = cv2.cvtColor(image, cv2.COLOR_YUV2BGR)
+    im = process_img_for_visualization(image, angle=i[1][0][0])
+
+    cv2.imshow('CNN input', im/255)
     print(train)
     cv2.waitKey(200)
 

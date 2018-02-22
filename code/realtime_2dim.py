@@ -45,8 +45,8 @@ class PIDController:
         self.integrator = 0.0
         self.derivator = 0.0
 
-        self.integrator_min = 500.0
-        self.integrator_max = 0.0
+        self.integrator_min = 0.0
+        self.integrator_max = 500.0
 
     def set_desired(self, desired):
         self.set_point = desired
@@ -81,7 +81,7 @@ class PIDController:
         return self.integrator
 
 
-pid_controller = PIDController(1.0, 1.0, 1.0)
+pid_controller = PIDController(1./12., 0.01, 0.0)
 pid_controller.set_desired(0.0)
 
 
@@ -107,12 +107,12 @@ def telemetry(sid, data):
             desired_steering_angle, desired_speed = model.predict(image[None, :, :, :], batch_size=1)[0]
 
             # Denormalize speed (also seen in preprocessing.normalize_speed())
-            max_speed = 50.0
-            desired_speed = (desired_speed + 0.5) * max_speed
+            max_speed = 60.0  # 216 km/h = 60 m/s
+            desired_speed = (desired_speed + 1.0) * max_speed / 2
 
             # Control speed
             pid_controller.set_desired(desired_speed)
-            throttle = pid_controller.update(float(speed))
+            throttle = pid_controller.update(speed)
 
             # # Calculate the throttle value and decide when to go to neutral or break.
             # # Break is activated by negative throttle
@@ -132,8 +132,10 @@ def telemetry(sid, data):
 
             # Extra gui
             if EXTRA_GUI:
+                # im = cv2.cvtColor(image, cv2.COLOR_YUV2BGR)
+                im = preprocessing.process_img_for_visualization(image, angle=desired_steering_angle)  # TODO maybe in img source
                 cv2.imshow('Center camera', cv2.cvtColor(np.asarray(image_src), cv2.COLOR_RGB2BGR))
-                cv2.imshow('CNN input', cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+                cv2.imshow('CNN input', im/255)
                 cv2.waitKey(1)
         except Exception as e:
             logging.info(e)
@@ -195,4 +197,6 @@ if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:/ProgramData/Thesis/code/logs/1517044193.003092/model-053.h5')
+    # run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/montr_val_3/model-005.h5')
+    # run('C:/ProgramData/Thesis/code/logs/1517044193.003092/model-053.h5')
+    run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/1516290512.150514/model-003.h5')

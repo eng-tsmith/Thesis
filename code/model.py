@@ -7,6 +7,7 @@ from keras import backend as k_backend
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.utils.vis_utils import plot_model
 from keras.optimizers import Adam
+# from NN_arch.NVIDIA import build_model
 from NN_arch.ElectronGuy import build_model
 from preprocessing import INPUT_SHAPE, flatten_data, batch_generator
 import pandas as pd
@@ -16,7 +17,7 @@ from sklearn.model_selection import train_test_split
 # ----------------------------------------------------------------------------
 # Modify path for graphviz to work
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+os.environ["PATH"] += os.pathsep + 'D:/GraphViz/bin'
 
 # Select GPU
 if k_backend.backend() == 'tensorflow':
@@ -157,7 +158,7 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
     adam = Adam(lr=args.learning_rate)  # ), beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
     # Compile model
-    model.compile(loss='mean_squared_error', optimizer=adam, metrics=['acc', 'mae'])
+    model.compile(loss='mse', optimizer=adam, metrics=['acc', 'mae'])
 
     # Plot model to PDF
     plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
@@ -209,7 +210,7 @@ def main():
     parser.add_argument('-p', help='data directory', dest='data_dir', type=str, default='./rec_data')
     parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.05)
     parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=100)
-    parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=32)
+    parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=512)
     parser.add_argument('-o', help='save best models only', dest='save_best_only', type=s2b, default='true')
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=1e-4)
     parser.add_argument('-e', help='experiment name', dest='exp_name', type=str, default=str(time.time()))
@@ -217,6 +218,7 @@ def main():
     parser.add_argument('-f', help='flatten data', dest='flatten', type=s2b, default='true')
     parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')
     parser.add_argument('-a', help='use all data', dest='all_data', type=s2b, default='false')
+    parser.add_argument('-q', help='dropout probability', dest='drop_prob', type=float, default=0.5)
     args = parser.parse_args()
 
     # ----------------------------------------------------------------------------
@@ -246,16 +248,16 @@ def main():
     # Manual train data definition
     data_dirs_train = [
         './berlin',
-        './jungle',
         './lake',
         './newyork',
         './recovery',
         './hongkong',
-        './hongkong2'
+        './hongkong2',
+        './montreal'
     ]
     # Manual val data definition
     data_dirs_val = [
-        './montreal'
+        './jungle'
     ]
 
     try:

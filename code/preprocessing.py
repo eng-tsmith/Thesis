@@ -8,7 +8,7 @@ import logging
 from random import randint
 
 
-IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
+IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3  # 128, 128, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
 
@@ -19,6 +19,31 @@ def plot_image(image_display):
     """
     plt.imshow(np.asarray(image_display, dtype='uint8'))
     plt.show()
+
+
+def process_img_for_visualization(image, angle=None, pred_angle=None):
+    """
+    Used by visualize_dataset method to format image prior to displaying. Converts colorspace back to original BGR,
+    applies text to display steering angle and frame number (within batch to be visualized), and applies lines
+    representing steering angle and model-predicted steering angle (if available) to image.
+    Source:
+    https://github.com/jeremy-shannon/CarND-Behavioral-Cloning-Project/blob/master/model.py
+    """
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    img = cv2.cvtColor(image, cv2.COLOR_YUV2BGR)
+
+    h, w = img.shape[0:2]
+
+    # apply text for frame number and steering angle
+    cv2.putText(img, 'angle: ' + str(angle), org=(2, 33), fontFace=font, fontScale=.5, color=(200, 100, 100), thickness=1)
+
+    # apply a line representing the steering angle
+    if angle is not None:
+        cv2.line(img, (int(w/2), int(h)), (int(w/2+angle*w/4), int(h/2)), (0, 255, 0), thickness=4)
+
+    if pred_angle is not None:
+        cv2.line(img, (int(w/2), int(h)), (int(w/2+pred_angle*w/4), int(h/2)), (0, 0, 255), thickness=4)
+    return img
 
 
 def center_val_data(x_in):
@@ -125,15 +150,17 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False):
 
 def load_image(data_dir, image_file):
     """
-    Load BGR images from a file. Takes data_dir as root folder so that the paths in csv file are considered as relative
+    Load RGB images from a file. Takes data_dir as root folder so that the paths in csv file are considered as relative
     :param data_dir:
     :param image_file:
     :return:
     """
-    return mpimg.imread(os.path.join(data_dir,
-                                     image_file.strip().split("\\")[-3],
-                                     image_file.strip().split("\\")[-2],
-                                     image_file.strip().split("\\")[-1]))
+    path = os.path.join(data_dir,
+                        image_file.strip().split("\\")[-3],
+                        image_file.strip().split("\\")[-2],
+                        image_file.strip().split("\\")[-1])
+    # Transform to RGB, so that preprocessing is same for train and realtime (unity sends rgb image)
+    return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
 
 def crop(image):
@@ -142,8 +169,11 @@ def crop(image):
     :param image:
     :return:
     """
+    crop_top = 65
+    crop_bot = 23
     h, w = image.shape[0], image.shape[1]
-    return image[60:h - 23, 0:w]
+
+    return image[crop_top:h - crop_bot, 0:w]
 
 
 def resize(image):
@@ -165,12 +195,12 @@ def rgb2yuv(image):
 
 
 def normalize_img(image):
-    img = image / 255.0 - 0.5
+    img = (image / 127.5) - 1.0
     return img
 
 
 def denormalize_img(image):
-    img = (image + 0.5) * 255.
+    img = (image + 1.0) * 127.5
     return img
 
 
@@ -180,12 +210,14 @@ def preprocess(image):
     """
     image = crop(image)
     image = resize(image)
-    # Normalize
-    image = np.asarray(image, dtype=np.float32)
-    image = normalize_img(image)
 
-    # This may become interesting when taking images from real camera for speed optimization
-    # image = rgb2yuv(image
+    image = np.asarray(image, dtype=np.float32)
+
+    # Normalize moved to NN
+    # image = normalize_img(image)  # Move to NN
+
+    # NVIDIA Paper
+    image = rgb2yuv(image)
     return image
 
 
@@ -216,14 +248,25 @@ def random_shadow(image):
     """
     Generates and adds random shadow
     """
-    image.setflags(write=1)
-    h, w = image.shape[:2]
-    [x1, x2] = np.random.choice(w, 2, replace=False)
-    k = h / (x2 - x1)
-    b = - k * x1
-    for i in range(h):
-        c = int((i - b) / k)
-        image[i, :c, :] = (image[i, :c, :] * .5).astype(np.int32)
+    if np.random.rand() < 0.5:
+        if np.random.rand() < 0.5:
+            image.setflags(write=1)
+            h, w = image.shape[:2]
+            [x1, x2] = np.random.choice(w, 2, replace=False)
+            m = h / (x2 - x1)
+            t = - m * x1
+            for i in range(h):
+                c = int((i - t) / m)
+                image[i, :c, :] = (image[i, :c, :] * .5).astype(np.int32)
+        else:
+            image.setflags(write=1)
+            h, w = image.shape[:2]
+            [x1, x2] = np.random.choice(h, 2, replace=False)
+            m = w / (x2 - x1)
+            t = - m * x1
+            for i in range(w):
+                c = int((i - t) / m)
+                image[:c, i, :] = (image[:c, i, :] * .5).astype(np.int32)
     return image
 
 
@@ -231,34 +274,36 @@ def random_brightness(image):
     """
     Randomly adjusts brightness of the image
     """
-    # HSV (Hue, Saturation, Value) is also called HSB ('B' for Brightness).
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    h, s, v = cv2.split(hsv)
+    if np.random.rand() < 0.5:
+        # HSV (Hue, Saturation, Value) is also called HSB ('B' for Brightness).
+        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        h, s, v = cv2.split(hsv)
 
-    value = randint(-25, 25)
+        value = randint(-25, 25)
 
-    if value >= 0:
-        lim = 255 - value
-        v[v > lim] = 255
-        v[v <= lim] += value
-    else:
-        lim = 0 - value
-        v[v < lim] = 0
-        v[v >= lim] = v[v >= lim] + value
+        if value >= 0:
+            lim = 255 - value
+            v[v > lim] = 255
+            v[v <= lim] += value
+        else:
+            lim = 0 - value
+            v[v < lim] = 0
+            v[v >= lim] = v[v >= lim] + value
 
-    final_hsv = cv2.merge((h, s, v))
+        final_hsv = cv2.merge((h, s, v))
+        image = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2RGB)
 
-    return cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+    return image
 
 
 def normalize_speed(speed):
     """
-    Normalize speed from MPH to [-0.5, 0.5]
+    Normalize speed from MPH to [-1, 1]
     :param speed:
     :return:
     """
-    max_speed = 50.0
-    return speed / max_speed - 0.5
+    max_speed = 60.0  # 216 km/h = 60 m/s
+    return 2 * speed / max_speed - 1.0
 
 
 def augment(data_dir, image_path, steering_angle):
