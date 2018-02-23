@@ -62,7 +62,7 @@ try:
     # Flatten distribution of steering angles
     if args.flatten:
         logging.info('Flatten data...')
-        x_train, y_train = flatten_data(x_train, y_train, print_enabled=False)
+        x_train, y_train = flatten_data(x_train, y_train, print_enabled=True, plot_enabled=True)
 
     logging.info('Data loaded successfully')
     logging.info('Train on {} samples, validate on {} samples'.format(len(x_train), len(x_valid)))

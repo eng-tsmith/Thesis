@@ -158,7 +158,7 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
     adam = Adam(lr=args.learning_rate)  # ), beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
     # Compile model
-    model.compile(loss='mse', optimizer=adam, metrics=['acc', 'mae'])
+    model.compile(loss='mse', optimizer=adam, metrics=['mae'])
 
     # Plot model to PDF
     plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)

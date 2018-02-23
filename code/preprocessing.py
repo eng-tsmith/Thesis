@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 import logging
 from random import randint
+from matplotlib2tikz import save as tikz_save
 
 
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3  # 128, 128, 3
@@ -79,7 +80,7 @@ def l_c_r_data(x_in, y_in, angle_adj=0.25):
     return x_out, y_out
 
 
-def flatten_data(x_in, y_in, num_bins=25, print_enabled=False):
+def flatten_data(x_in, y_in, num_bins=25, print_enabled=False, plot_enabled=False):
     """
     print a histogram to see which steering angle ranges are most overrepresented
     print histogram again to show more even distribution of steering angles
@@ -98,6 +99,22 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False):
         y_curr = y_in
     elif y_in.ndim == 2:
         y_curr = y_in[:, 0]
+        y_speed = y_in[:, 1]
+
+        avg_samples_per_bin = y_speed.size / num_bins
+        hist, bins = np.histogram(y_speed, num_bins)
+        if print_enabled:
+            width = 0.7 * (bins[1] - bins[0])
+            cent = (bins[:-1] + bins[1:]) / 2
+            plt.bar(cent, hist, align='center', width=width)
+            plt.plot((np.min(y_speed), np.max(y_speed)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
+            if plot_enabled:
+                plt.xlabel('Geschwindigkeiten')
+                plt.ylabel('Anzahl Bilder')
+                tikz_save('label_speed_full.tex', figureheight='\\figureheight', figurewidth='\\figurewidth')
+                plt.show()
+            else:
+                plt.show()
     else:
         logging.info("ERROR! Unknown Dimension. Look at y dim")
         return 0, 0
@@ -109,7 +126,13 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False):
         cent = (bins[:-1] + bins[1:]) / 2
         plt.bar(cent, hist, align='center', width=width)
         plt.plot((np.min(y_curr), np.max(y_curr)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
-        plt.show()
+        if plot_enabled:
+            plt.xlabel('Lenkwinkel')
+            plt.ylabel('Anzahl Bilder')
+            tikz_save('label_lenk_full.tex', figureheight='\\figureheight', figurewidth='\\figurewidth')
+            plt.show()
+        else:
+            plt.show()
 
     # determine keep probability for each bin: if below avg_samples_per_bin, keep all;
     # otherwise keep prob is proportional to number of samples above the average,
@@ -129,8 +152,10 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False):
                 if np.random.rand() > keep_probs[j]:
                     remove_list.append(i)
 
+    print(y_in.shape)
     y_out = np.delete(y_in, remove_list, 0)
     x_out = np.delete(x_in, remove_list, 0)
+    print(y_out.shape)
 
     # print histogram again to show more even distribution of steering angles
     if print_enabled:
@@ -138,11 +163,35 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False):
             y_curr = y_out
         elif y_in.ndim == 2:
             y_curr = y_out[:, 0]
+            y_speed = y_out[:, 1]
+
+            hist, bins = np.histogram(y_speed, num_bins)
+            if print_enabled:
+                width = 0.7 * (bins[1] - bins[0])
+                cent = (bins[:-1] + bins[1:]) / 2
+                plt.bar(cent, hist, align='center', width=width)
+                plt.plot((np.min(y_speed), np.max(y_speed)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
+                if plot_enabled:
+                    plt.xlabel('Geschwindigkeiten')
+                    plt.ylabel('Anzahl Bilder')
+                    tikz_save('label_speed_flat.tex', figureheight='\\figureheight', figurewidth='\\figurewidth')
+                    plt.show()
+                else:
+                    plt.show()
 
         hist, bins = np.histogram(y_curr, num_bins)
+        width = 0.7 * (bins[1] - bins[0])
+        cent = (bins[:-1] + bins[1:]) / 2
         plt.bar(cent, hist, align='center', width=width)
         plt.plot((np.min(y_curr), np.max(y_curr)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
-        plt.show()
+
+        if plot_enabled:
+            plt.xlabel('Lenkwinkel')
+            plt.ylabel('Anzahl Bilder')
+            tikz_save('label_lenk_flat.tex', figureheight='\\figureheight', figurewidth='\\figurewidth')
+            plt.show()
+        else:
+            plt.show()
 
     logging.info('Data set distribution flattened. Data set size reduced from {} to {}'.format(x_in.size, x_out.size))
     return x_out, y_out

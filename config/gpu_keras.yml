@@ -30,3 +30,4 @@ dependencies:
         - kivy==1.10.0
         - graphviz
         - pydot
+        - matplotlib2tikz
