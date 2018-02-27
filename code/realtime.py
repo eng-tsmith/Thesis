@@ -123,4 +123,4 @@ if __name__ == '__main__':
     # Logging
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
-    run('C:\\ProgramData\\Thesis\\code\\logs\\First_Try\\model-001.h5')
+    run('C:\\ProgramData\\Thesis\\code\\logs\\nvidia_val_montreal\\model-026.h5')

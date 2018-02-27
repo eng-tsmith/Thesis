@@ -7,8 +7,8 @@ from keras import backend as k_backend
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.utils.vis_utils import plot_model
 from keras.optimizers import Adam
-# from NN_arch.NVIDIA import build_model
-from NN_arch.ElectronGuy import build_model
+from NN_arch.NVIDIA import build_model
+# from NN_arch.ElectronGuy import build_model
 from preprocessing import INPUT_SHAPE, flatten_data, batch_generator
 import pandas as pd
 import numpy as np
@@ -248,16 +248,24 @@ def main():
     # Manual train data definition
     data_dirs_train = [
         './berlin',
-        './lake',
-        './newyork',
-        './recovery',
+        './berlin2',
+        './berlin3',
+        './hongkong',
         './hongkong',
         './hongkong2',
-        './montreal'
+        './hongkong3',
+        './jungle',
+        './jungle2',
+        './lake',
+        './lake2',
+        './newyok2',
+        './newyork',
+        './newyork3'
     ]
     # Manual val data definition
     data_dirs_val = [
-        './jungle'
+        './montreal',
+        './montreal2'
     ]
 
     try:

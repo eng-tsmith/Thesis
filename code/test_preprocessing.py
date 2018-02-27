@@ -36,13 +36,24 @@ test_speed = True
 
 # Manual train data definition
 data_dirs_train = [
-    './data_0',
-    './data_1'
+    './berlin',
+    './berlin2'
+    # './berlin3',
+    # './hongkong',
+    # './hongkong2',
+    # './hongkong3',
+    # './jungle',
+    # './jungle2',
+    # './lake',
+    # './lake2',
+    # './newyok2',
+    # './newyork',
+    # './newyork3'
 ]
 # Manual val data definition
 data_dirs_val = [
-    './data_2',
-    './data_3'
+    './montreal',
+    './montreal2'
 ]
 
 # 1. Load Data
@@ -62,7 +73,8 @@ try:
     # Flatten distribution of steering angles
     if args.flatten:
         logging.info('Flatten data...')
-        x_train, y_train = flatten_data(x_train, y_train, print_enabled=True, plot_enabled=True)
+        x_train, y_train = flatten_data(x_train, y_train, print_enabled=False, plot_enabled=False)
+        x_valid, y_valid = flatten_data(x_valid, y_valid, print_enabled=False, plot_enabled=False)
 
     logging.info('Data loaded successfully')
     logging.info('Train on {} samples, validate on {} samples'.format(len(x_train), len(x_valid)))
@@ -85,8 +97,7 @@ for i in p:
     train = i[1][0]
 
     # plot_image(image)
-
-    print(image)
+    # print(image)
 
     # im = cv2.cvtColor(image, cv2.COLOR_YUV2BGR)
     im = process_img_for_visualization(image, angle=i[1][0][0])

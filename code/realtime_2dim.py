@@ -81,7 +81,7 @@ class PIDController:
         return self.integrator
 
 
-pid_controller = PIDController(1./12., 0.01, 0.0)
+pid_controller = PIDController(1., 1., 0.)
 pid_controller.set_desired(0.0)
 
 
@@ -109,6 +109,8 @@ def telemetry(sid, data):
             # Denormalize speed (also seen in preprocessing.normalize_speed())
             max_speed = 60.0  # 216 km/h = 60 m/s
             desired_speed = (desired_speed + 1.0) * max_speed / 2
+
+            desired_speed = min(desired_speed, 20)
 
             # Control speed
             pid_controller.set_desired(desired_speed)
@@ -199,4 +201,4 @@ if __name__ == '__main__':
     logging.info('Loading example...')
     # run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/montr_val_3/model-005.h5')
     # run('C:/ProgramData/Thesis/code/logs/1517044193.003092/model-053.h5')
-    run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/1516290512.150514/model-003.h5')
+    run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/nvidia_val_montreal/model-001.h5')

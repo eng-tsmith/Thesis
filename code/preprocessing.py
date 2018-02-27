@@ -36,7 +36,7 @@ def process_img_for_visualization(image, angle=None, pred_angle=None):
     h, w = img.shape[0:2]
 
     # apply text for frame number and steering angle
-    cv2.putText(img, 'angle: ' + str(angle), org=(2, 33), fontFace=font, fontScale=.5, color=(200, 100, 100), thickness=1)
+    # cv2.putText(img, 'angle: ' + str(angle), org=(2, 33), fontFace=font, fontScale=.5, color=(200, 100, 100), thickness=1)
 
     # apply a line representing the steering angle
     if angle is not None:
@@ -152,10 +152,8 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False, plot_enabled=Fals
                 if np.random.rand() > keep_probs[j]:
                     remove_list.append(i)
 
-    print(y_in.shape)
     y_out = np.delete(y_in, remove_list, 0)
     x_out = np.delete(x_in, remove_list, 0)
-    print(y_out.shape)
 
     # print histogram again to show more even distribution of steering angles
     if print_enabled:
@@ -218,7 +216,7 @@ def crop(image):
     :param image:
     :return:
     """
-    crop_top = 65
+    crop_top = 60
     crop_bot = 23
     h, w = image.shape[0], image.shape[1]
 
