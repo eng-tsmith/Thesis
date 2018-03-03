@@ -6,8 +6,8 @@ import logging
 from keras import backend as k_backend
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.utils.vis_utils import plot_model
-from keras.optimizers import Adam
-from NN_arch.NVIDIA import build_model
+from keras.optimizers import Adam, Nadam
+from NN_arch.ElectronGuy import build_model
 # from NN_arch.ElectronGuy import build_model
 from preprocessing import INPUT_SHAPE, flatten_data, batch_generator
 import pandas as pd
@@ -17,7 +17,9 @@ from sklearn.model_selection import train_test_split
 # ----------------------------------------------------------------------------
 # Modify path for graphviz to work
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ["PATH"] += os.pathsep + 'D:/GraphViz/bin'
+os.environ["PATH"] += os.pathsep + 'D:/GraphViz/bin'  # Change path for it to work
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '3'
 
 # Select GPU
 if k_backend.backend() == 'tensorflow':
@@ -98,6 +100,13 @@ def load_data(args, data_dir=None):
                                                 'steering', 'throttle', 'reverse', 'speed'])
                     df_all = df_all.append(df_new)
 
+    # Checking for invalid data
+    if df_all.isnull().any().any():
+        logging.info('Corrupted data')
+        return -1
+    else:
+        logging.info('Data not corrupted')
+
     images_all = df_all[['center', 'left', 'right']].values
     labels = df_all[['steering', 'speed']].values
 
@@ -132,9 +141,10 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
         csv_writer.writerow(['Experiment name: ', args.exp_name])
         csv_writer.writerow(['NN architecture: ', nn_name])
         csv_writer.writerow(['Learning rate: ', args.learning_rate])
+        csv_writer.writerow(['L2 weight decay: ', args.l2_weight_decay])
         csv_writer.writerow(['Batch size: ', args.batch_size])
         csv_writer.writerow(['Number of epochs: ', args.nb_epoch])
-        # csv_writer.writerow(['Dropout probability: ', args.drop_prob])
+        csv_writer.writerow(['Dropout probability: ', args.drop_prob])
         csv_writer.writerow(['Test size fraction: ', args.test_size])
         csv_writer.writerow(['Save best models only: ', args.save_best_only])
         csv_writer.writerow(['Flatten steering angle data: ', args.flatten])
@@ -155,8 +165,8 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
                               write_images=True)
 
     # Optimizer
-    adam = Adam(lr=args.learning_rate)  # ), beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-
+    adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, clipnorm=1.)  # , epsilon=1e-08, decay=0.0)  #, clipnorm=1., clipvalue=0.5)
+    nadam = Nadam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999)  # , epsilon=1e-08, decay=0.0)
     # Compile model
     model.compile(loss='mse', optimizer=adam, metrics=['mae'])
 
@@ -208,13 +218,14 @@ def main():
     # Parser
     parser = argparse.ArgumentParser(description='Behavioral Cloning Training Program')
     parser.add_argument('-p', help='data directory', dest='data_dir', type=str, default='./rec_data')
-    parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.05)
+    parser.add_argument('-t', help='test size fraction', dest='test_size', type=float, default=0.1)
     parser.add_argument('-n', help='number of epochs', dest='nb_epoch', type=int, default=100)
     parser.add_argument('-b', help='batch size', dest='batch_size', type=int, default=512)
     parser.add_argument('-o', help='save best models only', dest='save_best_only', type=s2b, default='true')
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=1e-4)
+    parser.add_argument('-w', help='l2 weight decay', dest='l2_weight_decay', type=float, default=1e-5)
     parser.add_argument('-e', help='experiment name', dest='exp_name', type=str, default=str(time.time()))
-    parser.add_argument('-s', help='predict speed', dest='pred_speed', type=s2b, default='true')
+    # parser.add_argument('-s', help='predict speed', dest='pred_speed', type=s2b, default='true')
     parser.add_argument('-f', help='flatten data', dest='flatten', type=s2b, default='true')
     parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')
     parser.add_argument('-a', help='use all data', dest='all_data', type=s2b, default='false')
@@ -234,10 +245,14 @@ def main():
     for key, value in vars(args).items():
         logging.info('{:<20} := {}'.format(key, value))
     logging.info('_' * 30)
-    if not args.pred_speed:
+    if args.label_dim == 1:
         logging.info('Predicting only steering angle')
-    else:
+    elif args.label_dim == 2:
         logging.info('Predicting steering angle and speed')
+    else:
+        logging.info('Unknown Dimension.')
+        return -1
+
     logging.info('_' * 30)
     logging.info('=' * 30)
     logging.info('=' * 30)
@@ -247,9 +262,8 @@ def main():
 
     # Manual train data definition
     data_dirs_train = [
-        './berlin',
-        './berlin2',
-        './berlin3',
+        './montreal',
+        './montreal2',
         './hongkong',
         './hongkong',
         './hongkong2',
@@ -264,8 +278,9 @@ def main():
     ]
     # Manual val data definition
     data_dirs_val = [
-        './montreal',
-        './montreal2'
+        './berlin',
+        './berlin2',
+        './berlin3'
     ]
 
     try:

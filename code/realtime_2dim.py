@@ -106,11 +106,13 @@ def telemetry(sid, data):
             # predict the steering angle for the image
             desired_steering_angle, desired_speed = model.predict(image[None, :, :, :], batch_size=1)[0]
 
-            # Denormalize speed (also seen in preprocessing.normalize_speed())
-            max_speed = 60.0  # 216 km/h = 60 m/s
-            desired_speed = (desired_speed + 1.0) * max_speed / 2
+            # check if desired steering angle between -1 and 1
+            desired_steering_angle = np.clip(desired_steering_angle, -1.0, 1.0)
 
-            desired_speed = min(desired_speed, 20)
+            # Denormalize speed
+            desired_speed = preprocessing.denormalize_speed(desired_speed)
+
+            # desired_speed = 0.8*desired_speed
 
             # Control speed
             pid_controller.set_desired(desired_speed)
@@ -201,4 +203,4 @@ if __name__ == '__main__':
     logging.info('Loading example...')
     # run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/montr_val_3/model-005.h5')
     # run('C:/ProgramData/Thesis/code/logs/1517044193.003092/model-053.h5')
-    run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/nvidia_val_montreal/model-001.h5')
+    run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/electron_nadam/model-007.h5')

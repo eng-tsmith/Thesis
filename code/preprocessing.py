@@ -9,7 +9,7 @@ from random import randint
 from matplotlib2tikz import save as tikz_save
 
 
-IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3  # 128, 128, 3
+IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 64, 64, 3  # 66, 200, 3  # 128, 128, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
 
@@ -242,7 +242,7 @@ def rgb2yuv(image):
 
 
 def normalize_img(image):
-    img = (image / 127.5) - 1.0
+    img = image/255.0 - 0.5
     return img
 
 
@@ -255,9 +255,14 @@ def preprocess(image):
     """
     Combine all preprocess functions into one
     """
+    # Crop
     image = crop(image)
-    image = resize(image)
 
+    # Blur
+    # image = cv2.GaussianBlur(image, (3, 3), 0)
+
+    # Resize
+    image = resize(image)
     image = np.asarray(image, dtype=np.float32)
 
     # Normalize moved to NN
@@ -300,20 +305,22 @@ def random_shadow(image):
             image.setflags(write=1)
             h, w = image.shape[:2]
             [x1, x2] = np.random.choice(w, 2, replace=False)
-            m = h / (x2 - x1)
-            t = - m * x1
-            for i in range(h):
-                c = int((i - t) / m)
-                image[i, :c, :] = (image[i, :c, :] * .5).astype(np.int32)
+            if (x2 -x1) != 0:
+                m = h / (x2 - x1)
+                t = - m * x1
+                for i in range(h):
+                    c = int((i - t) / m)
+                    image[i, :c, :] = (image[i, :c, :] * .5).astype(np.int32)
         else:
             image.setflags(write=1)
             h, w = image.shape[:2]
             [x1, x2] = np.random.choice(h, 2, replace=False)
-            m = w / (x2 - x1)
-            t = - m * x1
-            for i in range(w):
-                c = int((i - t) / m)
-                image[:c, i, :] = (image[:c, i, :] * .5).astype(np.int32)
+            if (x2 - x1) != 0:
+                m = w / (x2 - x1)
+                t = - m * x1
+                for i in range(w):
+                    c = int((i - t) / m)
+                    image[:c, i, :] = (image[:c, i, :] * .5).astype(np.int32)
     return image
 
 
@@ -345,12 +352,22 @@ def random_brightness(image):
 
 def normalize_speed(speed):
     """
-    Normalize speed from MPH to [-1, 1]
+    Normalize speed from m/s to [-1, 1]
     :param speed:
     :return:
     """
     max_speed = 60.0  # 216 km/h = 60 m/s
     return 2 * speed / max_speed - 1.0
+
+
+def denormalize_speed(speed):
+    """
+    Denormalize speed from [-1, 1] to m/s
+    :param speed:
+    :return:
+    """
+    max_speed = 60.0  # 216 km/h = 60 m/s
+    return (speed + 1.0) * max_speed / 2
 
 
 def augment(data_dir, image_path, steering_angle):

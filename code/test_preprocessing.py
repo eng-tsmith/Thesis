@@ -4,6 +4,7 @@ from model import load_data
 import cv2
 from sklearn.model_selection import train_test_split
 from preprocessing import plot_image, process_img_for_visualization
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,22 +39,23 @@ test_speed = True
 data_dirs_train = [
     './berlin',
     './berlin2'
-    # './berlin3',
-    # './hongkong',
-    # './hongkong2',
-    # './hongkong3',
-    # './jungle',
-    # './jungle2',
-    # './lake',
-    # './lake2',
-    # './newyok2',
-    # './newyork',
-    # './newyork3'
+    './berlin3',
+    './hongkong',
+    './hongkong2',
+    './hongkong3',
+    './jungle',
+    './jungle2',
+    './lake',
+    './lake2',
+    './montreal',
+    './montreal2',
+    './newyok2',
+    './newyork',
+    './newyork3'
 ]
 # Manual val data definition
 data_dirs_val = [
-    './montreal',
-    './montreal2'
+'./lake'
 ]
 
 # 1. Load Data
@@ -96,14 +98,28 @@ for i in p:
     image = i[0][0]
     train = i[1][0]
 
+    for j in range(batch_size):
+        im = i[0][j]
+        tr = i[1][j]
+
+        im = process_img_for_visualization(im, angle=tr[0])
+
+        cv2.imshow('CNN input', im/255)
+        print(tr)
+        cv2.waitKey(200)
+
+
+
     # plot_image(image)
-    # print(image)
+    # print(i[0].shape)
+    # print(i[1].shape)
 
     # im = cv2.cvtColor(image, cv2.COLOR_YUV2BGR)
-    im = process_img_for_visualization(image, angle=i[1][0][0])
 
-    cv2.imshow('CNN input', im/255)
-    print(train)
-    cv2.waitKey(200)
+    # im = process_img_for_visualization(image, angle=i[1][0][0])
+    #
+    # cv2.imshow('CNN input', im/255)
+    # print(train)
+    # cv2.waitKey(200)
 
 
