@@ -7,8 +7,8 @@ from keras import backend as k_backend
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.utils.vis_utils import plot_model
 from keras.optimizers import Adam, Nadam
-from NN_arch.ElectronGuy import build_model
 # from NN_arch.ElectronGuy import build_model
+from NN_arch.NVIDIA import build_model
 from preprocessing import INPUT_SHAPE, flatten_data, batch_generator
 import pandas as pd
 import numpy as np
@@ -25,6 +25,7 @@ os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '3'
 if k_backend.backend() == 'tensorflow':
     import tensorflow as tf
     from keras.backend.tensorflow_backend import set_session
+    # k_backend.set_floatx('float64')  # TODO does not work yet but TF PR is available https://github.com/tensorflow/tensorflow/pull/12943
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.gpu_options.visible_device_list = "0"
@@ -165,10 +166,17 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
                               write_images=True)
 
     # Optimizer
-    adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, clipnorm=1.)  # , epsilon=1e-08, decay=0.0)  #, clipnorm=1., clipvalue=0.5)
+    adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, clipnorm=1., epsilon=0.1)  # , epsilon=1e-08, decay=0.0)  #, clipnorm=1., clipvalue=0.5)
     nadam = Nadam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999)  # , epsilon=1e-08, decay=0.0)
+
     # Compile model
-    model.compile(loss='mse', optimizer=adam, metrics=['mae'])
+    if args.label_dim == 1:
+        model.compile(loss='mse', optimizer=adam, metrics=['mae'])
+    elif args.label_dim == 2:
+        model.compile(loss='mse', optimizer=adam, metrics=['mae'], loss_weights=[1., 0.2])  # Check the loss weights
+    else:
+        logging.info("unknown output dimension. cannot build!")
+        return -1
 
     # Plot model to PDF
     plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
@@ -227,7 +235,7 @@ def main():
     parser.add_argument('-e', help='experiment name', dest='exp_name', type=str, default=str(time.time()))
     # parser.add_argument('-s', help='predict speed', dest='pred_speed', type=s2b, default='true')
     parser.add_argument('-f', help='flatten data', dest='flatten', type=s2b, default='true')
-    parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')
+    parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')  # TODO test
     parser.add_argument('-a', help='use all data', dest='all_data', type=s2b, default='false')
     parser.add_argument('-q', help='dropout probability', dest='drop_prob', type=float, default=0.5)
     args = parser.parse_args()
@@ -261,10 +269,12 @@ def main():
     logging.info('Loading data...')
 
     # Manual train data definition
+    # './berlin',
+
+    # './berlin3'
+    # './montreal2',
+
     data_dirs_train = [
-        './montreal',
-        './montreal2',
-        './hongkong',
         './hongkong',
         './hongkong2',
         './hongkong3',
@@ -278,9 +288,8 @@ def main():
     ]
     # Manual val data definition
     data_dirs_val = [
-        './berlin',
         './berlin2',
-        './berlin3'
+        './montreal'
     ]
 
     try:

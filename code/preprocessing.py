@@ -9,7 +9,8 @@ from random import randint
 from matplotlib2tikz import save as tikz_save
 
 
-IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 64, 64, 3  # 66, 200, 3  # 128, 128, 3
+IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3  # NVIDIA
+# IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 64, 64, 3  # ELECTRON
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
 
@@ -30,7 +31,7 @@ def process_img_for_visualization(image, angle=None, pred_angle=None):
     Source:
     https://github.com/jeremy-shannon/CarND-Behavioral-Cloning-Project/blob/master/model.py
     """
-    font = cv2.FONT_HERSHEY_SIMPLEX
+    # font = cv2.FONT_HERSHEY_SIMPLEX
     img = cv2.cvtColor(image, cv2.COLOR_YUV2BGR)
 
     h, w = img.shape[0:2]
@@ -247,7 +248,7 @@ def normalize_img(image):
 
 
 def denormalize_img(image):
-    img = (image + 1.0) * 127.5
+    img = (image + 0.5) * 255.0
     return img
 
 
@@ -266,7 +267,7 @@ def preprocess(image):
     image = np.asarray(image, dtype=np.float32)
 
     # Normalize moved to NN
-    # image = normalize_img(image)  # Move to NN
+    # image = normalize_img(image)  # Move to NN for GPU computation
 
     # NVIDIA Paper
     image = rgb2yuv(image)
@@ -454,4 +455,8 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
         x_batch = np.asarray(x_batch, dtype='float32')
         y_batch = np.asarray(y_batch, dtype='float32')
 
-        yield (x_batch, y_batch)
+        y_batch1 = y_batch[:, 0]  # NEW LINE
+        y_batch2 = y_batch[:, 1]  # NEW LINE
+
+        # yield (x_batch, y_batch) # NEW LINE
+        yield (x_batch, [y_batch1, y_batch2])  # NEW LINE

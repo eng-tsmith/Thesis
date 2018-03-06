@@ -17,6 +17,8 @@ import cv2
 sio = socketio.Server()
 app = Flask(__name__)
 
+use_NVIDIA = True
+
 model = None
 prev_image_array = None
 
@@ -81,7 +83,7 @@ class PIDController:
         return self.integrator
 
 
-pid_controller = PIDController(1., 1., 0.)
+pid_controller = PIDController(5., 0., 0.)
 pid_controller.set_desired(0.0)
 
 
@@ -89,6 +91,7 @@ pid_controller.set_desired(0.0)
 @sio.on('telemetry')
 def telemetry(sid, data):
     global pid_controller
+    global use_NVIDIA
 
     if data:
         # Get current data of car
@@ -103,8 +106,13 @@ def telemetry(sid, data):
             image = np.asarray(image_src)
             image = preprocessing.preprocess(image)
 
-            # predict the steering angle for the image
-            desired_steering_angle, desired_speed = model.predict(image[None, :, :, :], batch_size=1)[0]
+            # predict the steering angle and velocity for the image
+            if use_NVIDIA:
+                output_2 = model.predict(image[None, :, :, :], batch_size=1)
+                desired_steering_angle = output_2[0][0][0]
+                desired_speed = output_2[1][0][0]
+            else:
+                desired_steering_angle, desired_speed = model.predict(image[None, :, :, :], batch_size=1)[0]
 
             # check if desired steering angle between -1 and 1
             desired_steering_angle = np.clip(desired_steering_angle, -1.0, 1.0)
@@ -113,6 +121,7 @@ def telemetry(sid, data):
             desired_speed = preprocessing.denormalize_speed(desired_speed)
 
             # desired_speed = 0.8*desired_speed
+            # desired_speed = min(desired_speed, 20.0)
 
             # Control speed
             pid_controller.set_desired(desired_speed)
@@ -199,8 +208,12 @@ def run(path_to_model):
 
 if __name__ == '__main__':
     # Logging
+    global use_NVIDIA
     logging.basicConfig(level=logging.INFO)
     logging.info('Loading example...')
+    use_NVIDIA = True
+
     # run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/montr_val_3/model-005.h5')
     # run('C:/ProgramData/Thesis/code/logs/1517044193.003092/model-053.h5')
-    run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/electron_nadam/model-007.h5')
+    run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/FINAL_nvidia_adam_split/model-009.h5')
+    # run('C:/Users/timmy/Documents/Dev/Thesis/code/logs/FINAL_electron_nadam_val_split/model-099.h5')

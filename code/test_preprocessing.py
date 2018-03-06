@@ -95,31 +95,12 @@ else:
 cv2.namedWindow('CNN input', cv2.WINDOW_NORMAL)
 
 for i in p:
-    image = i[0][0]
-    train = i[1][0]
-
     for j in range(batch_size):
         im = i[0][j]
-        tr = i[1][j]
+        tr_lenk = i[1][0][j]
+        tr_velo = i[1][1][j]
 
-        im = process_img_for_visualization(im, angle=tr[0])
-
+        im = process_img_for_visualization(im, angle=tr_lenk)
         cv2.imshow('CNN input', im/255)
-        print(tr)
+        print(tr_lenk)
         cv2.waitKey(200)
-
-
-
-    # plot_image(image)
-    # print(i[0].shape)
-    # print(i[1].shape)
-
-    # im = cv2.cvtColor(image, cv2.COLOR_YUV2BGR)
-
-    # im = process_img_for_visualization(image, angle=i[1][0][0])
-    #
-    # cv2.imshow('CNN input', im/255)
-    # print(train)
-    # cv2.waitKey(200)
-
-
