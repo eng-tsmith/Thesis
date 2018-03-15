@@ -1,4 +1,4 @@
-from keras.layers import Input, Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten, BatchNormalization
+from keras.layers import Input, Lambda, Conv2D, Dropout, Dense, Flatten
 from keras.models import Model
 from preprocessing import normalize_img
 from keras.regularizers import l2
@@ -9,7 +9,11 @@ def build_model(args, input_shape):
     """
     NVIDIA Paper:
     End to End Learning for Self-Driving Cars
-    https://arxiv.org/abs/1604.07316
+
+    Source: https://arxiv.org/abs/1604.07316
+    :param args: Argparser for hyperparameter
+    :param input_shape: Input dimension of image
+    :return:
     """
     name = 'NVIDIA'
 

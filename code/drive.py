@@ -69,6 +69,9 @@ class PIDController:
         return self.integrator
 
 
+###################
+# Init Global Var #
+###################
 # Init logging
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('socketio').setLevel(logging.ERROR)
@@ -100,12 +103,13 @@ pid_controller.set_desired(0.0)
 def telemetry(sid, data):
     """
     This function is called after receiving telemtry event
-    :param sid:
+    :param sid: SocketIO ID
     :param data: data packet received from UNITY
     """
     global pid_controller
     global use_double_output
     global model_name
+    logging.debug(sid)
 
     if data:
         # Get current data of car
@@ -167,6 +171,7 @@ def connect(sid, environ):
     :param sid: ID of client
     :param environ:
     """
+    logging.debug(environ)
     logging.info("connect " + sid)
     send_control(0, 0)
 
@@ -184,6 +189,10 @@ def send_control(steering_angle, throttle):
 
 
 def run(path_to_model):
+    """
+    Main funtion for autonomous driving
+    :param path_to_model:
+    """
     global sio
     global app
     global model

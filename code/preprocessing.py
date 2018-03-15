@@ -1,9 +1,10 @@
 import cv2
 import os
 import numpy as np
-import matplotlib.image as mpimg
+# import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from sklearn.utils import shuffle
+# from sklearn.utils import shuffle
+import sklearn.utils as skutil
 import logging
 from random import randint
 from matplotlib2tikz import save as tikz_save
@@ -35,13 +36,8 @@ def process_img_for_visualization(image, angle=None, pred_angle=None):
     Source:
     https://github.com/jeremy-shannon/CarND-Behavioral-Cloning-Project/blob/master/model.py
     """
-    # font = cv2.FONT_HERSHEY_SIMPLEX
     img = cv2.cvtColor(image, cv2.COLOR_YUV2BGR)
-
     h, w = img.shape[0:2]
-
-    # apply text for frame number and steering angle
-    # cv2.putText(img, 'angle: ' + str(angle), org=(2, 33), fontFace=font, fontScale=.5, color=(200, 100, 100), thickness=1)
 
     # apply a line representing the steering angle
     if angle is not None:
@@ -95,11 +91,9 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False, plot_enabled=Fals
     :param y_in:
     :param num_bins:
     :param print_enabled:
+    :param plot_enabled:
     :return:
     """
-    cent = None
-    width = None
-
     if y_in.ndim == 1:
         y_curr = y_in
     elif y_in.ndim == 2:
@@ -152,7 +146,7 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False, plot_enabled=Fals
     remove_list = []
     for i in range(len(y_curr)):
         for j in range(num_bins):
-            if y_curr[i] > bins[j] and y_curr[i] <= bins[j + 1]:
+            if bins[j] < y_curr[i] <= bins[j + 1]:
                 # delete from X and y with probability 1 - keep_probs[j]
                 if np.random.rand() > keep_probs[j]:
                     remove_list.append(i)
@@ -202,8 +196,7 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False, plot_enabled=Fals
 
 def load_image_absolute(image_file):
     """
-    Load RGB images from a file. Takes data_dir as root folder so that the paths in csv file are considered as relative
-    :param data_dir:
+    Load RGB images from a file. Uses absolute path.
     :param image_file:
     :return:
     """
@@ -329,7 +322,7 @@ def random_shadow(image):
             image.setflags(write=1)
             h, w = image.shape[:2]
             [x1, x2] = np.random.choice(w, 2, replace=False)
-            if (x2 -x1) != 0:
+            if (x2 - x1) != 0:
                 m = h / (x2 - x1)
                 t = - m * x1
                 for i in range(h):
@@ -426,7 +419,7 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training, mo
         if curr_image > (n_images - batch_size):
             curr_image = 0
         if curr_image == 0:
-            x_in, y_in = shuffle(x_in, y_in)
+            x_in, y_in = skutil.shuffle(x_in, y_in)
 
         future_index = curr_image + batch_size
 

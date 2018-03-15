@@ -1,15 +1,13 @@
 from keras.models import load_model
 from preprocessing import load_image_absolute, preprocess
 import numpy as np
-import matplotlib.pyplot as plt
 import time
-from keras import backend as K
-import cv2
+from keras import backend as k_backend
 from scipy.misc import imsave
 import logging
 import argparse
 # Manual deactivation of learning mode for backend functions
-K.set_learning_phase(0)
+k_backend.set_learning_phase(0)
 
 
 def s2b(s):
@@ -23,11 +21,21 @@ def s2b(s):
 
 
 def normalize(x):
-    # utility function to normalize a tensor by its L2 norm
-    return x / (K.sqrt(K.mean(K.square(x))) + K.epsilon())
+    """
+    utility function to normalize a tensor by its L2 norm
+    :param x: Input
+    :return: Normalized Input
+    """
+
+    return x / (k_backend.sqrt(k_backend.mean(k_backend.square(x))) + k_backend.epsilon())
 
 
 def deprocess_image(x):
+    """
+    Denormalize Input
+    :param x: Input
+    :return: Denormalized Input
+    """
     # normalize tensor: center on 0., ensure std is 0.1
     x -= x.mean()
     x /= (x.std() + 1e-5)
@@ -44,22 +52,23 @@ def deprocess_image(x):
     return x
 
 
-def main(args):
+def main(args_in):
     """
-    https://blog.keras.io/how-convolutional-neural-networks-see-the-world.html
+    Main funtion to visualise CONV filters
+    Source: https://blog.keras.io/how-convolutional-neural-networks-see-the-world.html
     :return:
     """
     # Compute real image
-    path_image = args.image_path
-    use_real_img = args.use_real_img
+    path_image = args_in.image_path
+    use_real_img = args_in.use_real_img
 
     # build model
-    path_weights = args.model_path
+    path_weights = args_in.model_path
     model = load_model(path_weights)
     model.summary()
 
     if model.input_shape[1] == 66 and model.input_shape[2] == 200:
-        print('nvidia')
+        logging.info('nvidia')
         model_name = 'nvidia'
         # dimensions of the generated pictures for each filter.
         img_height = 66
@@ -80,7 +89,7 @@ def main(args):
             layers[4]: 64,
         }
     elif model.input_shape[1] == 64 and model.input_shape[2] == 64:
-        print('electron')
+        logging.info('electron')
         model_name = 'electron'
         # dimensions of the generated pictures for each filter.
         img_height = 64
@@ -105,6 +114,9 @@ def main(args):
             layers[6]: 128,
             layers[7]: 128,
         }
+    else:
+        logging.info('Model not found')
+        return -1
 
     for curr_layer_name in layers:
         # get the symbolic outputs of each "key" layer (we gave them unique names).
@@ -119,24 +131,24 @@ def main(args):
         for filter_index in range(nr_filter_dict[curr_layer_name]):
             # we only scan through the first 200 filters,
             # but there are actually 512 of them
-            print('Processing filter %d' % filter_index)
+            logging.info('Processing filter %d' % filter_index)
             start_time = time.time()
 
             layer_output = layer_dict[curr_layer_name].output
 
-            if K.image_data_format() == 'channels_first':
-                loss = K.mean(layer_output[:, filter_index, :, :])
+            if k_backend.image_data_format() == 'channels_first':
+                loss = k_backend.mean(layer_output[:, filter_index, :, :])
             else:
-                loss = K.mean(layer_output[:, :, :, filter_index])
+                loss = k_backend.mean(layer_output[:, :, :, filter_index])
 
             # compute the gradient of the input picture wrt this loss
-            grads = K.gradients(loss, input_img)[0]
+            grads = k_backend.gradients(loss, input_img)[0]
 
             # normalization trick: we normalize the gradient
             grads = normalize(grads)
 
             # this function returns the loss and grads given the input picture
-            iterate = K.function([input_img], [loss, grads])
+            iterate = k_backend.function([input_img], [loss, grads])
 
             # step size for gradient ascent
             step = 10.
@@ -148,7 +160,7 @@ def main(args):
                 input_img_data = img[None, :, :, :]
             else:
                 # we start from a gray image with some random noise
-                if K.image_data_format() == 'channels_first':
+                if k_backend.image_data_format() == 'channels_first':
                     input_img_data = np.random.random((1, 3, img_height, img_width))
                 else:
                     input_img_data = np.random.random((1, img_height, img_width, 3))
@@ -157,11 +169,13 @@ def main(args):
             input_img_data = np.asarray(input_img_data, dtype=np.float32)
 
             # run gradient ascent for 20 steps
+            loss_value = 0
             for i in range(20):
                 loss_value, grads_value = iterate([input_img_data])
                 input_img_data += grads_value * step
 
-                print('Current loss value:', loss_value)
+                # logging.info('Current loss value:', loss_value)
+                logging.info('Current loss value: {:.4f} '.format(loss_value))
 
             img = deprocess_image(input_img_data[0])
 
@@ -170,7 +184,7 @@ def main(args):
             kept_filters.append((img, loss_value))
 
             end_time = time.time()
-            print('Filter %d processed in %ds' % (filter_index, end_time - start_time))
+            logging.info('Filter %d processed in %ds' % (filter_index, end_time - start_time))
 
         # we will stich the best 16 filters on a 4 x 4 grid.
         n = 4
@@ -227,5 +241,3 @@ if __name__ == '__main__':
             main(args)
     else:
         logging.info('No model specified. Exit.')
-
-

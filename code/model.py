@@ -6,7 +6,7 @@ import logging
 from keras import backend as k_backend
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.utils.vis_utils import plot_model
-from keras.optimizers import Adam, Nadam
+from keras.optimizers import Adam
 from NN_arch.ElectronGuy import build_model as build_model_electron
 from NN_arch.NVIDIA import build_model as build_model_nvidia
 from preprocessing import INPUT_SHAPE_NVIDIA, INPUT_SHAPE_ELECTRON, flatten_data, batch_generator
@@ -25,7 +25,6 @@ os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '3'
 if k_backend.backend() == 'tensorflow':
     import tensorflow as tf
     from keras.backend.tensorflow_backend import set_session
-    # k_backend.set_floatx('float64')  # TODO does not work yet but TF PR is available https://github.com/tensorflow/tensorflow/pull/12943
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.gpu_options.visible_device_list = "0"
@@ -166,8 +165,8 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
                               write_images=True)
 
     # Optimizer
-    adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-08)  # , epsilon=1e-08, decay=0.0)  #, clipnorm=1., clipvalue=0.5)
-    nadam = Nadam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999)  # , epsilon=1e-08, decay=0.0)
+    # , epsilon=1e-08, decay=0.0)  #, clipnorm=1., clipvalue=0.5)
+    adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
     # Compile model
     if args.label_dim == 1:
@@ -270,8 +269,6 @@ def main():
     logging.info('Loading data...')
 
     # Manual train data definition
-
-
     data_dirs_train = [
         './berlin',
         './berlin2',
