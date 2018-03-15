@@ -10,30 +10,30 @@ logging.basicConfig(level=logging.INFO)
 
 
 class Args:
-    def __init__(self, data_dir, test_size, flatten, all_data):
+    def __init__(self, data_dir, test_size, batch_size, flatten, all_data, model_name, label_dim):
         self.data_dir = data_dir
         self.test_size = test_size
+        self.batch_size = batch_size
         self.flatten = flatten
         self.all_data = all_data
-
-
+        self.model_name = model_name
+        self.label_dim = label_dim
 
 
 ##############################
 # Test Pipeline
 ###############################
-##############################
-# Test Pipeline
-###############################
+# Setting
 data_dir = './rec_data'
 test_size = 0.2
 batch_size = 32
 flatten = True
 all_data = False
+model_name = 'nvidia'
+label_dim = 2
 
-args = Args(data_dir, test_size, flatten, all_data)
-
-test_speed = True
+# Create args like model.py
+args = Args(data_dir, test_size, batch_size, flatten, all_data, model_name, label_dim)
 
 # Manual train data definition
 data_dirs_train = [
@@ -53,12 +53,13 @@ data_dirs_train = [
     './newyork',
     './newyork3'
 ]
+
 # Manual val data definition
 data_dirs_val = [
-'./lake'
+    './lake'
 ]
 
-# 1. Load Data
+# Load Data
 try:
     logging.info('Loading data...')
 
@@ -85,15 +86,12 @@ except Exception as e:
     logging.info('Data could not be loaded. Aborting')
 
 
-if not test_speed:
-    label_dim = 1
-    p = batch_generator(data_dir, x_train, y_train, batch_size, label_dim, False)
-else:
-    label_dim = 2
-    p = batch_generator(data_dir, x_train, y_train, batch_size, label_dim, True)
+# Create generator
+p = batch_generator(args.data_dir, x_train, y_train, args.batch_size, args.label_dim, True, args.model_name)
 
 cv2.namedWindow('CNN input', cv2.WINDOW_NORMAL)
 
+# Run generator
 for i in p:
     for j in range(batch_size):
         im = i[0][j]

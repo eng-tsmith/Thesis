@@ -19,15 +19,12 @@ dependencies:
     - pandas
     - imageio
     - pip:
-        - moviepy
-        - tensorflow-gpu==1.4.0
-        - keras==2.1.1
-        - docutils
-        - pygments
-        - pypiwin32
-        - kivy.deps.sdl2
-        - kivy.deps.glew
-        - kivy==1.10.0
-        - graphviz
-        - pydot
-        - matplotlib2tikz
+        - moviepy==0.2.3.2
+        - tensorflow-gpu==1.5.0
+        - keras==2.1.4
+        - docutils==0.14
+        - pygments==2.2.0
+        - pypiwin32==219
+        - graphviz==0.8.2
+        - pydot==1.2.4
+        - matplotlib2tikz==0.6.15

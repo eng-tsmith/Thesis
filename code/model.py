@@ -7,9 +7,9 @@ from keras import backend as k_backend
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras.utils.vis_utils import plot_model
 from keras.optimizers import Adam, Nadam
-# from NN_arch.ElectronGuy import build_model
-from NN_arch.NVIDIA import build_model
-from preprocessing import INPUT_SHAPE, flatten_data, batch_generator
+from NN_arch.ElectronGuy import build_model as build_model_electron
+from NN_arch.NVIDIA import build_model as build_model_nvidia
+from preprocessing import INPUT_SHAPE_NVIDIA, INPUT_SHAPE_ELECTRON, flatten_data, batch_generator
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -166,14 +166,14 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
                               write_images=True)
 
     # Optimizer
-    adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, clipnorm=1., epsilon=0.1)  # , epsilon=1e-08, decay=0.0)  #, clipnorm=1., clipvalue=0.5)
+    adam = Adam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-08)  # , epsilon=1e-08, decay=0.0)  #, clipnorm=1., clipvalue=0.5)
     nadam = Nadam(lr=args.learning_rate, beta_1=0.9, beta_2=0.999)  # , epsilon=1e-08, decay=0.0)
 
     # Compile model
     if args.label_dim == 1:
         model.compile(loss='mse', optimizer=adam, metrics=['mae'])
     elif args.label_dim == 2:
-        model.compile(loss='mse', optimizer=adam, metrics=['mae'], loss_weights=[1., 0.2])  # Check the loss weights
+        model.compile(loss='mse', optimizer=adam, metrics=['mae'], loss_weights=[1., 1.])
     else:
         logging.info("unknown output dimension. cannot build!")
         return -1
@@ -182,13 +182,14 @@ def train_model(model, nn_name, args, x_train, x_valid, y_train, y_valid):
     plot_model(model, to_file=dir_log + 'model_diagram.pdf', show_shapes=True, show_layer_names=True)
 
     # Start Training
-    model.fit_generator(batch_generator(args.data_dir, x_train, y_train, args.batch_size, args.label_dim, True),
+    model.fit_generator(batch_generator(args.data_dir, x_train, y_train, args.batch_size,
+                                        args.label_dim, True, args.model_name),
                         steps_per_epoch=len(x_train)/args.batch_size,
                         epochs=args.nb_epoch,
                         verbose=1,
                         callbacks=[checkpoint, tensorboard],
                         validation_data=batch_generator(args.data_dir, x_valid, y_valid,
-                                                        args.batch_size, args.label_dim, False),
+                                                        args.batch_size, args.label_dim, False, args.model_name),
                         validation_steps=len(x_valid)/args.batch_size,
                         max_queue_size=1)
 
@@ -233,11 +234,11 @@ def main():
     parser.add_argument('-l', help='learning rate', dest='learning_rate', type=float, default=1e-4)
     parser.add_argument('-w', help='l2 weight decay', dest='l2_weight_decay', type=float, default=1e-5)
     parser.add_argument('-e', help='experiment name', dest='exp_name', type=str, default=str(time.time()))
-    # parser.add_argument('-s', help='predict speed', dest='pred_speed', type=s2b, default='true')
     parser.add_argument('-f', help='flatten data', dest='flatten', type=s2b, default='true')
-    parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')  # TODO test
+    parser.add_argument('-d', help='label dimension', dest='label_dim', type=int, default='2')
     parser.add_argument('-a', help='use all data', dest='all_data', type=s2b, default='false')
     parser.add_argument('-q', help='dropout probability', dest='drop_prob', type=float, default=0.5)
+    parser.add_argument('-m', help='name of model. electron or nvidia', dest='model_name', type=str, default='nvidia')
     args = parser.parse_args()
 
     # ----------------------------------------------------------------------------
@@ -269,12 +270,12 @@ def main():
     logging.info('Loading data...')
 
     # Manual train data definition
-    # './berlin',
 
-    # './berlin3'
-    # './montreal2',
 
     data_dirs_train = [
+        './berlin',
+        './berlin2',
+        './berlin3',
         './hongkong',
         './hongkong2',
         './hongkong3',
@@ -288,7 +289,7 @@ def main():
     ]
     # Manual val data definition
     data_dirs_val = [
-        './berlin2',
+        './montreal2',
         './montreal'
     ]
 
@@ -321,7 +322,13 @@ def main():
     logging.info('Building model...')
 
     try:
-        model, nn_name = build_model(args, INPUT_SHAPE)
+        if args.model_name == 'nvidia':
+            model, nn_name = build_model_nvidia(args, INPUT_SHAPE_NVIDIA)
+        elif args.model_name == 'electron':
+            model, nn_name = build_model_electron(args, INPUT_SHAPE_ELECTRON)
+        else:
+            logging.info('Model name not existent')
+            return -1
         logging.info('Model built successfully')
     except Exception as e:
         logging.exception(e)

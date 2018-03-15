@@ -1,7 +1,0 @@
-Experiment name:1516290512.150514
-NN architecture:ElectronGuy
-Learning rate:0.0001
-Batch size:128
-Number of epochs:30
-Test size fraction:0.05
-Save best models only:True

@@ -9,9 +9,13 @@ from random import randint
 from matplotlib2tikz import save as tikz_save
 
 
-IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3  # NVIDIA
-# IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 64, 64, 3  # ELECTRON
-INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
+# NVIDIA
+IMAGE_HEIGHT_NVIDIA, IMAGE_WIDTH_NVIDIA, IMAGE_CHANNELS_NVIDIA = 66, 200, 3
+INPUT_SHAPE_NVIDIA = (IMAGE_HEIGHT_NVIDIA, IMAGE_WIDTH_NVIDIA, IMAGE_CHANNELS_NVIDIA)
+
+# ELECTRON
+IMAGE_HEIGHT_ELECTRON, IMAGE_WIDTH_ELECTRON, IMAGE_CHANNELS_ELECTRON = 64, 64, 3
+INPUT_SHAPE_ELECTRON = (IMAGE_HEIGHT_ELECTRON, IMAGE_WIDTH_ELECTRON, IMAGE_CHANNELS_ELECTRON)
 
 
 def plot_image(image_display):
@@ -196,6 +200,17 @@ def flatten_data(x_in, y_in, num_bins=25, print_enabled=False, plot_enabled=Fals
     return x_out, y_out
 
 
+def load_image_absolute(image_file):
+    """
+    Load RGB images from a file. Takes data_dir as root folder so that the paths in csv file are considered as relative
+    :param data_dir:
+    :param image_file:
+    :return:
+    """
+    # Transform to RGB, so that preprocessing is same for train and realtime (unity sends rgb image)
+    return cv2.cvtColor(cv2.imread(image_file), cv2.COLOR_BGR2RGB)
+
+
 def load_image(data_dir, image_file):
     """
     Load RGB images from a file. Takes data_dir as root folder so that the paths in csv file are considered as relative
@@ -224,13 +239,21 @@ def crop(image):
     return image[crop_top:h - crop_bot, 0:w]
 
 
-def resize(image):
+def resize(image, model_name):
     """
     Resize the image to the input shape used by the network model
     :param image: image array
+    :param model_name: name of model for proper dim
     :return:
     """
-    return cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT), cv2.INTER_AREA)
+    if model_name == 'nvidia':
+        img = cv2.resize(image, (IMAGE_WIDTH_NVIDIA, IMAGE_HEIGHT_NVIDIA), cv2.INTER_AREA)
+    elif model_name == 'electron':
+        img = cv2.resize(image, (IMAGE_WIDTH_ELECTRON, IMAGE_HEIGHT_ELECTRON), cv2.INTER_AREA)
+    else:
+        logging.info('Model not existent')
+        return -1
+    return img
 
 
 def rgb2yuv(image):
@@ -252,7 +275,7 @@ def denormalize_img(image):
     return img
 
 
-def preprocess(image):
+def preprocess(image, model_name):
     """
     Combine all preprocess functions into one
     """
@@ -263,7 +286,7 @@ def preprocess(image):
     # image = cv2.GaussianBlur(image, (3, 3), 0)
 
     # Resize
-    image = resize(image)
+    image = resize(image, model_name)
     image = np.asarray(image, dtype=np.float32)
 
     # Normalize moved to NN
@@ -385,7 +408,7 @@ def augment(data_dir, image_path, steering_angle):
     return image, steering_angle
 
 
-def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
+def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training, model_name):
     """
     Generator for training/ valdiation data
     :param data_dir:
@@ -394,12 +417,13 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
     :param batch_size:
     :param label_dim:
     :param is_training:
+    :param model_name:
     """
     curr_image = 0
     n_images = x_in.size
 
     while True:
-        if curr_image > n_images:
+        if curr_image > (n_images - batch_size):
             curr_image = 0
         if curr_image == 0:
             x_in, y_in = shuffle(x_in, y_in)
@@ -409,7 +433,13 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
         x_data = x_in[curr_image:future_index]
         y_data = y_in[curr_image:future_index]
 
-        x_batch = np.empty([batch_size, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS])
+        if model_name == 'nvidia':
+            x_batch = np.empty([batch_size, IMAGE_HEIGHT_NVIDIA, IMAGE_WIDTH_NVIDIA, IMAGE_CHANNELS_NVIDIA])
+        elif model_name == 'electron':
+            x_batch = np.empty([batch_size, IMAGE_HEIGHT_ELECTRON, IMAGE_WIDTH_ELECTRON, IMAGE_CHANNELS_ELECTRON])
+        else:
+            logging.info('Model does not exist')
+            return -1
 
         if label_dim == 1:
             y_batch = np.empty(batch_size)
@@ -430,7 +460,7 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
                     label_steer = y_data[sample_index][0]
 
                 # Preprocessing goes for all data
-                x_batch[sample_index] = preprocess(image)
+                x_batch[sample_index] = preprocess(image, model_name)
                 y_batch[sample_index] = np.asarray([label_steer])
 
             # Gather batch for steering angle and speed
@@ -445,7 +475,7 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
                     label_speed = normalize_speed(y_data[sample_index][1])
 
                 # Preprocessing goes for all data
-                x_batch[sample_index] = preprocess(image)
+                x_batch[sample_index] = preprocess(image, model_name)
                 y_batch[sample_index] = np.asarray([label_steer, label_speed])
 
         # Keeps track of which image has already been seen
@@ -455,8 +485,12 @@ def batch_generator(data_dir, x_in, y_in, batch_size, label_dim, is_training):
         x_batch = np.asarray(x_batch, dtype='float32')
         y_batch = np.asarray(y_batch, dtype='float32')
 
-        y_batch1 = y_batch[:, 0]  # NEW LINE
-        y_batch2 = y_batch[:, 1]  # NEW LINE
-
-        # yield (x_batch, y_batch) # NEW LINE
-        yield (x_batch, [y_batch1, y_batch2])  # NEW LINE
+        if label_dim == 1:
+            yield (x_batch, y_batch)
+        elif label_dim == 2:
+            y_batch1 = y_batch[:, 0]
+            y_batch2 = y_batch[:, 1]
+            yield (x_batch, [y_batch1, y_batch2])
+        else:
+            logging.info('Wrong dim')
+            return -1

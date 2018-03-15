@@ -17,21 +17,38 @@ def build_model(args, input_shape):
 
     norm = Lambda(normalize_img)(inputs)
 
+    kernel_initializer = 'RandomUniform'
+    bias_initializer = 'zeros'
+
     l_reg = args.l2_weight_decay
 
-    conv1 = Conv2D(24, (5, 5), strides=(2, 2), activation='relu', kernel_regularizer=l2(l_reg), name='conv1')(norm)
-    conv2 = Conv2D(36, (5, 5), strides=(2, 2), activation='relu', kernel_regularizer=l2(l_reg), name='conv2')(conv1)
-    conv3 = Conv2D(48, (5, 5), strides=(2, 2), activation='relu', kernel_regularizer=l2(l_reg), name='conv3')(conv2)
-    conv4 = Conv2D(64, (3, 3), strides=(1, 1), activation='relu', kernel_regularizer=l2(l_reg), name='conv4')(conv3)
-    conv5 = Conv2D(64, (3, 3), strides=(1, 1), activation='relu', kernel_regularizer=l2(l_reg), name='conv5')(conv4)
+    conv1 = Conv2D(24, (5, 5), strides=(2, 2), activation='relu', kernel_initializer=kernel_initializer,
+                   bias_initializer=bias_initializer, kernel_regularizer=l2(l_reg), name='conv1')(norm)
+
+    conv2 = Conv2D(36, (5, 5), strides=(2, 2), activation='relu', kernel_initializer=kernel_initializer,
+                   bias_initializer=bias_initializer, kernel_regularizer=l2(l_reg), name='conv2')(conv1)
+
+    conv3 = Conv2D(48, (5, 5), strides=(2, 2), activation='relu', kernel_initializer=kernel_initializer,
+                   bias_initializer=bias_initializer, kernel_regularizer=l2(l_reg), name='conv3')(conv2)
+
+    conv4 = Conv2D(64, (3, 3), strides=(1, 1), activation='relu', kernel_initializer=kernel_initializer,
+                   bias_initializer=bias_initializer, kernel_regularizer=l2(l_reg), name='conv4')(conv3)
+
+    conv5 = Conv2D(64, (3, 3), strides=(1, 1), activation='relu', kernel_initializer=kernel_initializer,
+                   bias_initializer=bias_initializer, kernel_regularizer=l2(l_reg), name='conv5')(conv4)
 
     dropout = Dropout(args.drop_prob, name='dropout')(conv5)
 
     flat = Flatten(name='flatten_layer')(dropout)
 
-    dense1 = Dense(100, activation='elu', kernel_regularizer=l2(l_reg), name='fc1')(flat)
-    dense2 = Dense(50,  activation='elu', kernel_regularizer=l2(l_reg), name='fc2')(dense1)
-    dense3 = Dense(10,  activation='elu', kernel_regularizer=l2(l_reg), name='fc3')(dense2)
+    dense1 = Dense(100, activation='relu', kernel_initializer=kernel_initializer,
+                   bias_initializer=bias_initializer, kernel_regularizer=l2(l_reg), name='fc1')(flat)
+
+    dense2 = Dense(50,  activation='relu', kernel_initializer=kernel_initializer,
+                   bias_initializer=bias_initializer, kernel_regularizer=l2(l_reg), name='fc2')(dense1)
+
+    dense3 = Dense(10,  activation='relu', kernel_initializer=kernel_initializer,
+                   bias_initializer=bias_initializer, kernel_regularizer=l2(l_reg), name='fc3')(dense2)
 
     if args.label_dim == 1:
         output = Dense(1, activation='linear', name='output')(dense3)
